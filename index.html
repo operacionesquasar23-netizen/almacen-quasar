@@ -893,37 +893,14 @@ function showToast(msg) {
 }
 
 // ============ GOOGLE SHEETS CONFIG ============
-const _INV_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQm8eHc19MEj93Po-xiGDbF2udNQEHdz7GPiEo5dWJJisU7Sfn3PIapI7_viRjx7yfl_5V9_1_fRTel/pub?gid=1635313522&single=true&output=csv';
-const _HIST_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQm8eHc19MEj93Po-xiGDbF2udNQEHdz7GPiEo5dWJJisU7Sfn3PIapI7_viRjx7yfl_5V9_1_fRTel/pub?gid=0&single=true&output=csv';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzPvTzh2n0HC7dAtF-qQesoIEadnfwM3LSB19POuAQOSm3wxkxG-qk-s1POvU124Wlw/exec';
 
-async function fetchCSV(url) {
-  const proxies = [
-    u => `https://thingproxy.freeboard.io/fetch/${u}`,
-    u => `https://api.codetabs.com/v1/proxy?quest=${u}`,
-    u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-  ];
-  for (const makeProxy of proxies) {
-    try {
-      const proxyUrl = makeProxy(url);
-      console.log('Intentando proxy:', proxyUrl.substring(0,60));
-      const res = await fetch(proxyUrl);
-      if (res.ok) {
-        const text = await res.text();
-        console.log('Respuesta (100 chars):', text.substring(0,100));
-        if (text && text.includes(',') && !text.toLowerCase().startsWith('<!') && !text.includes('"error"')) {
-          return text;
-        }
-      }
-    } catch(e) {
-      console.warn('Proxy falló:', e.message);
-      continue;
-    }
-  }
-  throw new Error('Todos los proxies fallaron');
+async function fetchJSON(sheet) {
+  const url = `${API_URL}?sheet=${sheet}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Error ' + res.status);
+  return await res.json();
 }
-
-const SHEETS_INVENTARIO = _INV_URL;
-const SHEETS_HISTORIAL  = _HIST_URL;
 
 // Columnas INVENTARIO_ACTIVO:
 // 0=ID,1=FECHA INGRESO,2=GUIA,3=CODIGO,4=ELEMENTO,5=CLIENTE,6=CAMPAÑA,
@@ -988,25 +965,44 @@ async function cargarDesdeSheets() {
 
   try {
     // Cargar inventario
-    const csvInv = await fetchCSV(SHEETS_INVENTARIO);
-    const rowsInv = parseCSV(csvInv);
-    items = rowsInv.map(csvRowToItem).filter(i => i.id);
+    // Cargar inventario desde Apps Script API
+    const rowsInv = await fetchJSON('inventario');
+    items = rowsInv.map(r => ({
+      id:            r['ID'] || '',
+      codigo:        r['CODIGO'] || '',
+      elemento:      r['ELEMENTO'] || '',
+      cliente:       r['CLIENTE'] || '',
+      campana:       r['CAMPAÑA'] || '',
+      cadena:        r['CADENA'] || '',
+      tienda:        r['TIENDA / ALMACEN'] || '',
+      zona:          r['ZONA'] || '',
+      cant:          r['CANT'] || '',
+      guia:          r['GUIA'] || '',
+      proveedor:     r['PROVEEDOR'] || '',
+      medidas:       r['MEDIDAS
+(alto - ancho - prof)'] || r['MEDIDAS'] || '',
+      fechaIngreso:  r['FECHA INGRESO'] || '',
+      motivoIngreso: r['MOTIVO INGRESO'] || '',
+      comentario:    r['COMENTARIO'] || '',
+      diasAlmacen:   r['TIEMPO EN ALMACÉN'] || '',
+      foto:          r['FOTO_URL'] || null,
+      estado:        'almacen',
+      historial:     []
+    })).filter(i => i.id);
     console.log('Items cargados:', items.length);
 
     // Cargar historial
     try {
-      const csvHist = await fetchCSV(SHEETS_HISTORIAL);
-      historialGlobal = parseCSV(csvHist);
-      // Vincular historial a cada item
+      historialGlobal = await fetchJSON('historial');
       items.forEach(item => {
         item.historial = historialGlobal
-          .filter(h => h['ID'] === item.id || h['B'] === item.id)
+          .filter(h => h['ID'] === item.id)
           .map(h => ({
-            tipo:      (h['TIPO']||h['H']||'').toLowerCase(),
-            fecha:     h['FECHA']||h['I']||'',
-            motivo:    h['MOTIVO']||h['J']||'',
-            destino:   h['DESTINO / PROVEEDOR']||h['K']||'',
-            comentario:h['COMENTARIO']||h['L']||''
+            tipo:       (h['TIPO'] || '').toLowerCase(),
+            fecha:      h['FECHA'] || '',
+            motivo:     h['MOTIVO'] || '',
+            destino:    h['DESTINO / PROVEEDOR'] || '',
+            comentario: h['COMENTARIO'] || ''
           }));
       });
     } catch(e) {
