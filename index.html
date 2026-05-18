@@ -979,8 +979,7 @@ async function cargarDesdeSheets() {
       cant:          r['CANT'] || '',
       guia:          r['GUIA'] || '',
       proveedor:     r['PROVEEDOR'] || '',
-      medidas:       r['MEDIDAS
-(alto - ancho - prof)'] || r['MEDIDAS'] || '',
+      medidas:       r['MEDIDAS'] || r['MEDIDAS\n(alto - ancho - prof)'] || r['MEDIDAS(alto - ancho - prof)'] || r['MEDIDAS (alto - ancho - prof)'] || r['MEDIDAS'] || '',
       fechaIngreso:  r['FECHA INGRESO'] || '',
       motivoIngreso: r['MOTIVO INGRESO'] || '',
       comentario:    r['COMENTARIO'] || '',
