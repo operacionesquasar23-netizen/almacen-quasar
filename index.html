@@ -1051,6 +1051,36 @@ async function cargarDesdeSheets() {
       console.warn('Historial no disponible:', e);
     }
 
+    // Cargar desechos via Apps Script
+    try {
+      const rowsDesechos = await fetchJSON('desechos');
+      const desechos = rowsDesechos.map(r => ({
+        id:            String(r['ID'] || ''),
+        codigo:        String(r['CODIGO'] || ''),
+        elemento:      String(r['ELEMENTO'] || ''),
+        cliente:       String(r['CLIENTE'] || ''),
+        campana:       String(r['CAMPAÑA'] || ''),
+        cadena:        String(r['CADENA'] || ''),
+        tienda:        String(r['TIENDA / ALMACEN'] || ''),
+        zona:          String(r['ZONA'] || ''),
+        cant:          String(r['CANT'] || ''),
+        guia:          String(r['GUIA'] || ''),
+        proveedor:     String(r['PROVEEDOR'] || ''),
+        medidas:       String(r['MEDIDAS'] || ''),
+        fechaIngreso:  String(r['FECHA INGRESO'] || ''),
+        motivoIngreso: String(r['MOTIVO INGRESO'] || ''),
+        comentario:    String(r['COMENTARIO'] || ''),
+        diasAlmacen:   String(r['TIEMPO EN ALMACÉN'] || ''),
+        foto:          r['FOTO_URL'] || null,
+        estado:        'desecho',
+        historial:     []
+      })).filter(i => i.id);
+      items = items.concat(desechos);
+      console.log('Desechos cargados:', desechos.length);
+    } catch(e) {
+      console.warn('Desechos no disponibles:', e);
+    }
+
     // Merge con fotos guardadas localmente
     const fotosSaved = JSON.parse(localStorage.getItem('quasar-fotos') || '{}');
     items.forEach(item => {
