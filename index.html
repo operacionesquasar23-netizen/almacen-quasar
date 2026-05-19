@@ -662,7 +662,8 @@ function filterItems() {
       ${thumb}
       <div class="item-info">
         <div class="item-name">${item.elemento || 'Sin nombre'}</div>
-        <div class="item-meta">Cód: ${item.codigo || '—'} · ${item.tienda || item.cliente || '—'}</div>
+        <div class="item-meta">Cód: ${item.codigo || '—'} · ${item.cliente || '—'}</div>
+        <div class="item-meta" style="font-size:10px;margin-top:1px">${item.tienda || '—'}</div>
         <div class="item-badges">
           <span class="badge ${badgeClass}">${badgeText}</span>
           ${fotoBadge}
