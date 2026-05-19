@@ -360,7 +360,7 @@ input[type="file"] { display: none; }
     </div>
     <div class="search-box">
       <span class="search-icon">🔍</span>
-      <input type="text" id="search-input" placeholder="Buscar elemento, código, cliente..." oninput="filterItems()">
+      <input type="text" id="search-input" placeholder="Buscar elemento, código, cliente..." oninput="filterItems()" onkeyup="filterItems()">
     </div>
   </div>
   <div class="tabs">
@@ -630,7 +630,47 @@ function getFilteredItems() {
 }
 
 function filterItems() {
-  renderList();
+  const q = document.getElementById('search-input').value.toLowerCase().trim();
+  const list = document.getElementById('item-list');
+  
+  const filtered = items.filter(item => {
+    const matchTab = currentTab === 'todos' ||
+      (currentTab === 'almacen' && item.estado === 'almacen') ||
+      (currentTab === 'despachado' && item.estado === 'despachado');
+    const matchSearch = !q ||
+      (item.elemento||'').toLowerCase().includes(q) ||
+      (item.codigo||'').toLowerCase().includes(q) ||
+      (item.cliente||'').toLowerCase().includes(q) ||
+      (item.campana||'').toLowerCase().includes(q) ||
+      (item.tienda||'').toLowerCase().includes(q) ||
+      (item.zona||'').toLowerCase().includes(q);
+    return matchTab && matchSearch;
+  });
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-text">No se encontraron elementos.</div></div>`;
+    return;
+  }
+  list.innerHTML = filtered.map(item => {
+    const badgeClass = item.estado === 'despachado' ? 'badge-despachado' : 'badge-almacen';
+    const badgeText = item.estado === 'despachado' ? 'Despachado' : 'En almacén';
+    const fotoBadge = item.foto ? '<span class="badge badge-foto">📷 Con foto</span>' : '';
+    const thumb = item.foto
+      ? `<div class="item-thumb has-photo"><img src="${item.foto}" alt="foto"></div>`
+      : `<div class="item-thumb">${getEmoji(item.elemento)}</div>`;
+    return `<div class="item-card" onclick="openDetail('${item.id}')">
+      ${thumb}
+      <div class="item-info">
+        <div class="item-name">${item.elemento || 'Sin nombre'}</div>
+        <div class="item-meta">Cód: ${item.codigo || '—'} · ${item.tienda || item.cliente || '—'}</div>
+        <div class="item-badges">
+          <span class="badge ${badgeClass}">${badgeText}</span>
+          ${fotoBadge}
+        </div>
+      </div>
+      <span class="chevron">›</span>
+    </div>`;
+  }).join('');
 }
 
 function getEmoji(elemento) {
