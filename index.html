@@ -1046,18 +1046,54 @@ function removeFotoLocal(itemId) {
   localStorage.setItem('quasar-fotos', JSON.stringify(fotos));
 }
 
-// Override handlePhotoCapture para guardar foto localmente
+// Subir foto a Google Drive via Apps Script
+async function uploadPhotoToDrive(itemId, imageData, fileName) {
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'uploadPhoto',
+        itemId: itemId,
+        imageData: imageData,
+        fileName: fileName
+      })
+    });
+    const json = await res.json();
+    if (json.success) return json.url;
+    throw new Error(json.error);
+  } catch(e) {
+    console.error('Error subiendo foto:', e);
+    return null;
+  }
+}
+
+// Override handlePhotoCapture para subir a Drive
 function handlePhotoCapture(e) {
   const file = e.target.files[0];
   if (!file) return;
+  const item = items.find(i => i.id === currentItemId);
+  if (!item) return;
+
+  showToast('📤 Subiendo foto...');
+
   const reader = new FileReader();
-  reader.onload = (ev) => {
-    const item = items.find(i => i.id === currentItemId);
-    if (!item) return;
-    item.foto = ev.target.result;
-    saveFoto(item.id, ev.target.result);
+  reader.onload = async (ev) => {
+    const imageData = ev.target.result;
+    // Mostrar preview local inmediatamente
+    item.foto = imageData;
+    saveFoto(item.id, imageData);
     renderDetail(item);
-    showToast('📷 Foto guardada');
+
+    // Subir a Drive en background
+    const driveUrl = await uploadPhotoToDrive(item.id, imageData, item.id);
+    if (driveUrl) {
+      item.foto = driveUrl;
+      saveFoto(item.id, driveUrl);
+      renderDetail(item);
+      showToast('📷 Foto guardada en Drive');
+    } else {
+      showToast('⚠️ Foto guardada solo localmente');
+    }
     e.target.value = '';
   };
   reader.readAsDataURL(file);
