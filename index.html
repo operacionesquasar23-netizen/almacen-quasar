@@ -638,12 +638,12 @@ function filterItems() {
       (currentTab === 'almacen' && item.estado === 'almacen') ||
       (currentTab === 'despachado' && item.estado === 'despachado');
     const matchSearch = !q ||
-      (item.elemento||'').toLowerCase().includes(q) ||
-      (item.codigo||'').toLowerCase().includes(q) ||
-      (item.cliente||'').toLowerCase().includes(q) ||
-      (item.campana||'').toLowerCase().includes(q) ||
-      (item.tienda||'').toLowerCase().includes(q) ||
-      (item.zona||'').toLowerCase().includes(q);
+      String(item.elemento||'').toLowerCase().includes(q) ||
+      String(item.codigo||'').toLowerCase().includes(q) ||
+      String(item.cliente||'').toLowerCase().includes(q) ||
+      String(item.campana||'').toLowerCase().includes(q) ||
+      String(item.tienda||'').toLowerCase().includes(q) ||
+      String(item.zona||'').toLowerCase().includes(q);
     return matchTab && matchSearch;
   });
 
