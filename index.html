@@ -366,7 +366,7 @@ input[type="file"] { display: none; }
   <div class="tabs">
     <button class="tab-btn active" onclick="setTab('todos', this)">Todos</button>
     <button class="tab-btn" onclick="setTab('almacen', this)">En almacén</button>
-    <button class="tab-btn" onclick="setTab('despachado', this)">Despachados</button>
+    <button class="tab-btn" onclick="setTab('desecho', this)">Desechos</button>
   </div>
   <div class="stats-row">
     <div class="stat-card">
@@ -379,7 +379,7 @@ input[type="file"] { display: none; }
     </div>
     <div class="stat-card">
       <div class="stat-num" id="stat-despachado" style="color:var(--red)">0</div>
-      <div class="stat-label">Despachados</div>
+      <div class="stat-label">Desechos</div>
     </div>
   </div>
   <div class="list-container" id="item-list"></div>
@@ -605,7 +605,7 @@ function setTab(tab, el) {
 function updateStats() {
   const total = items.length;
   const enAlmacen = items.filter(i => i.estado === 'almacen').length;
-  const despachados = items.filter(i => i.estado === 'despachado').length;
+  const despachados = items.filter(i => i.estado === 'desecho').length;
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-almacen').textContent = enAlmacen;
   document.getElementById('stat-despachado').textContent = despachados;
@@ -618,7 +618,7 @@ function getFilteredItems() {
   return items.filter(item => {
     const matchTab = currentTab === 'todos' ||
       (currentTab === 'almacen' && item.estado === 'almacen') ||
-      (currentTab === 'despachado' && item.estado === 'despachado');
+      (currentTab === 'desecho' && item.estado === 'desecho');
     const matchSearch = !q ||
       (item.elemento||'').toLowerCase().includes(q) ||
       (item.codigo||'').toLowerCase().includes(q) ||
@@ -636,7 +636,7 @@ function filterItems() {
   const filtered = items.filter(item => {
     const matchTab = currentTab === 'todos' ||
       (currentTab === 'almacen' && item.estado === 'almacen') ||
-      (currentTab === 'despachado' && item.estado === 'despachado');
+      (currentTab === 'desecho' && item.estado === 'desecho');
     const matchSearch = !q ||
       String(item.elemento||'').toLowerCase().includes(q) ||
       String(item.codigo||'').toLowerCase().includes(q) ||
@@ -652,8 +652,8 @@ function filterItems() {
     return;
   }
   list.innerHTML = filtered.map(item => {
-    const badgeClass = item.estado === 'despachado' ? 'badge-despachado' : 'badge-almacen';
-    const badgeText = item.estado === 'despachado' ? 'Despachado' : 'En almacén';
+    const badgeClass = item.estado === 'desecho' ? 'badge-despachado' : 'badge-almacen';
+    const badgeText = item.estado === 'desecho' ? 'Desecho' : 'En almacén';
     const fotoBadge = item.foto ? '<span class="badge badge-foto">📷 Con foto</span>' : '';
     const thumb = item.foto
       ? `<div class="item-thumb has-photo"><img src="${item.foto}" alt="foto"></div>`
@@ -696,8 +696,8 @@ function renderList() {
     return;
   }
   list.innerHTML = filtered.map(item => {
-    const badgeClass = item.estado === 'despachado' ? 'badge-despachado' : 'badge-almacen';
-    const badgeText = item.estado === 'despachado' ? 'Despachado' : 'En almacén';
+    const badgeClass = item.estado === 'desecho' ? 'badge-despachado' : 'badge-almacen';
+    const badgeText = item.estado === 'desecho' ? 'Desecho' : 'En almacén';
     const fotoBadge = item.foto ? '<span class="badge badge-foto">📷 Con foto</span>' : '';
     const thumb = item.foto
       ? `<div class="item-thumb has-photo"><img src="${item.foto}" alt="foto"></div>`
@@ -1028,7 +1028,7 @@ async function cargarDesdeSheets() {
       comentario:    r['COMENTARIO'] || '',
       diasAlmacen:   r['TIEMPO EN ALMACÉN'] || '',
       foto:          r['FOTO_URL'] || null,
-      estado:        'almacen',
+      estado:        String(r['MOTIVO SALIDA']||'').toUpperCase() === 'DESECHO' ? 'desecho' : 'almacen',
       historial:     []
     })).filter(i => i.id);
     console.log('Items cargados:', items.length);
