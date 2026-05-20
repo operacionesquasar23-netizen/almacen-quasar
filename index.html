@@ -39,13 +39,36 @@
 
 body {
   font-family: 'DM Sans', sans-serif;
-  background: var(--gray-50);
+  background: var(--gray-100);
   color: var(--gray-900);
-  max-width: 430px;
-  margin: 0 auto;
   min-height: 100vh;
   position: relative;
   overflow-x: hidden;
+}
+
+.app-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--gray-50);
+  position: relative;
+}
+
+@media (min-width: 768px) {
+  .topbar { padding: 20px 32px 20px; }
+  .tabs { padding: 0 32px; }
+  .stats-row { padding: 20px 32px 10px; grid-template-columns: repeat(3, 180px); }
+  .list-container { padding: 12px 32px 100px; }
+  .item-list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+  .item-card { margin-bottom: 0; }
+  .bottom-nav { max-width: 1200px; }
+  .fab { right: 32px; }
+  .detail-body { max-width: 700px; margin: 0 auto; }
+  .form-body { max-width: 700px; margin: 0 auto; }
+}
+
+@media (min-width: 1024px) {
+  .stats-row { grid-template-columns: repeat(3, 200px); }
 }
 
 /* TOPBAR */
@@ -399,6 +422,7 @@ if (sessionStorage.getItem('quasar-auth') === '1') {
 }
 </script>
 
+<div class="app-wrapper">
 <div class="screen active" id="screen-inventario">
   <div class="topbar">
     <div class="topbar-row">
@@ -436,7 +460,7 @@ if (sessionStorage.getItem('quasar-auth') === '1') {
       <div class="stat-label">Desechos</div>
     </div>
   </div>
-  <div class="list-container" id="item-list"></div>
+  <div class="list-container"><div class="item-list-grid" id="item-list"></div></div>
   <button class="fab" onclick="showScreen('screen-nuevo')" title="Agregar elemento">＋</button>
 </div>
 
@@ -1257,5 +1281,6 @@ function removePhoto() {
 // ============ INIT ============
 cargarDesdeSheets();
 </script>
+</div>
 </body>
 </html>
