@@ -570,9 +570,29 @@ function today() {
 }
 
 function formatDate(d) {
-  if (!d) return '—';
-  const [y,m,day] = d.split('-');
-  return `${day}/${m}/${y}`;
+  if (!d || d === '' || d === 'null') return '—';
+  try {
+    // Handle ISO format: 2025-11-11T05:00:00.000Z or 11T05:00:00.000Z/11/2025
+    let date;
+    if (String(d).includes('T')) {
+      date = new Date(d);
+    } else if (String(d).includes('/')) {
+      // DD/MM/YYYY or MM/DD/YYYY
+      const parts = String(d).split('/');
+      date = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+    } else if (String(d).includes('-')) {
+      date = new Date(d);
+    } else {
+      return String(d);
+    }
+    if (isNaN(date.getTime())) return String(d);
+    const day = String(date.getDate()).padStart(2,'0');
+    const month = String(date.getMonth()+1).padStart(2,'0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch(e) {
+    return String(d);
+  }
 }
 
 // ============ SCREEN NAV ============
