@@ -619,15 +619,19 @@ if (sessionStorage.getItem('quasar-auth') === '1') {
   </div>
   <div class="report-body">
     <div class="report-filter-card">
-      <div class="report-filter-title">Filtrar por</div>
-      <div class="filter-type-row">
-        <button class="filter-type-btn active" id="filter-btn-cliente" onclick="setFilterType('cliente')">👤 Cliente</button>
-        <button class="filter-type-btn" id="filter-btn-elemento" onclick="setFilterType('elemento')">📦 Elemento</button>
+      <div class="report-filter-title">Buscar elementos</div>
+      <div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:200px;">
+          <label class="form-label" style="margin-bottom:6px; display:block;">Cliente</label>
+          <input class="form-input" id="report-search-cliente" placeholder="Ej: Lindley, Backus..." type="text" oninput="buscarSugerencias('cliente')" onkeydown="if(event.key==='Enter') generarVistaPrevia()">
+          <div id="sugg-cliente" style="display:none; background:#fff; border:1px solid var(--gray-200); border-radius:var(--radius-sm); margin-top:2px; max-height:160px; overflow-y:auto; position:absolute; z-index:100; min-width:200px;"></div>
+        </div>
+        <div style="flex:1; min-width:200px; position:relative;">
+          <label class="form-label" style="margin-bottom:6px; display:block;">Elemento</label>
+          <input class="form-input" id="report-search-elemento" placeholder="Ej: Cabecera, Lateral..." type="text" oninput="buscarSugerencias('elemento')" onkeydown="if(event.key==='Enter') generarVistaPrevia()">
+          <div id="sugg-elemento" style="display:none; background:#fff; border:1px solid var(--gray-200); border-radius:var(--radius-sm); margin-top:2px; max-height:160px; overflow-y:auto; position:absolute; z-index:100; min-width:200px;"></div>
+        </div>
       </div>
-      <div class="form-group" style="margin:0 0 14px">
-        <input class="form-input" id="report-search" placeholder="Ej: Lindley, Cabecera Mueble..." type="text" oninput="buscarReporte()">
-      </div>
-      <div id="report-suggestions" style="display:none; background:#fff; border:1px solid var(--gray-200); border-radius:var(--radius-sm); margin-top:-10px; margin-bottom:14px; max-height:160px; overflow-y:auto;"></div>
       <button class="btn-primary" onclick="generarVistaPrevia()" style="margin:0">Ver vista previa</button>
     </div>
 
@@ -1434,57 +1438,50 @@ function removePhoto() {
 
 
 // ============ REPORTES ============
-let currentFilterType = 'cliente';
 let reportItems = [];
 
-function setFilterType(type) {
-  currentFilterType = type;
-  document.getElementById('filter-btn-cliente').className = 'filter-type-btn' + (type === 'cliente' ? ' active' : '');
-  document.getElementById('filter-btn-elemento').className = 'filter-type-btn' + (type === 'elemento' ? ' active' : '');
-  document.getElementById('report-search').placeholder = type === 'cliente' ? 'Ej: Lindley, Backus, Unilever...' : 'Ej: Cabecera Mueble, Lateral...';
-  document.getElementById('report-suggestions').style.display = 'none';
-  document.getElementById('report-search').value = '';
-  document.getElementById('report-preview-container').style.display = 'none';
-}
-
-function buscarReporte() {
-  const q = document.getElementById('report-search').value.toLowerCase().trim();
-  const sugg = document.getElementById('report-suggestions');
+function buscarSugerencias(tipo) {
+  const inputId = tipo === 'cliente' ? 'report-search-cliente' : 'report-search-elemento';
+  const suggId = tipo === 'cliente' ? 'sugg-cliente' : 'sugg-elemento';
+  const q = document.getElementById(inputId).value.toLowerCase().trim();
+  const sugg = document.getElementById(suggId);
   if (!q || q.length < 2) { sugg.style.display = 'none'; return; }
 
-  // Get unique values
   const valores = [...new Set(
     items
       .filter(i => i.estado === 'almacen')
-      .map(i => currentFilterType === 'cliente' ? i.cliente : i.elemento)
-      .filter(v => v && String(v).toLowerCase().includes(q))
+      .map(i => tipo === 'cliente' ? String(i.cliente||'') : String(i.elemento||''))
+      .filter(v => v && v.toLowerCase().includes(q))
   )].slice(0, 8);
 
   if (valores.length === 0) { sugg.style.display = 'none'; return; }
-
   sugg.style.display = 'block';
-  sugg.innerHTML = valores.map(v => 
-    `<div onclick="seleccionarSugerencia('${String(v).replace(/'/g,"\'")}'')" 
-      style="padding:10px 14px; cursor:pointer; font-size:13px; border-bottom:1px solid var(--gray-100);"
-      onmouseover="this.style.background='var(--gray-50)'" 
+  sugg.innerHTML = valores.map(v =>
+    `<div onclick="seleccionarSugerencia('${tipo}','${String(v).replace(/'/g,"\'")}')"
+      style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--gray-100);"
+      onmouseover="this.style.background='var(--gray-50)'"
       onmouseout="this.style.background=''">${v}</div>`
   ).join('');
 }
 
-function seleccionarSugerencia(val) {
-  document.getElementById('report-search').value = val;
-  document.getElementById('report-suggestions').style.display = 'none';
-  generarVistaPrevia();
+function seleccionarSugerencia(tipo, val) {
+  const inputId = tipo === 'cliente' ? 'report-search-cliente' : 'report-search-elemento';
+  const suggId  = tipo === 'cliente' ? 'sugg-cliente' : 'sugg-elemento';
+  document.getElementById(inputId).value = val;
+  document.getElementById(suggId).style.display = 'none';
 }
 
 function generarVistaPrevia() {
-  const q = document.getElementById('report-search').value.trim();
-  if (!q) { showToast('⚠️ Escribe un valor para filtrar'); return; }
+  const qCliente  = document.getElementById('report-search-cliente').value.trim().toLowerCase();
+  const qElemento = document.getElementById('report-search-elemento').value.trim().toLowerCase();
+
+  if (!qCliente && !qElemento) { showToast('⚠️ Escribe al menos un filtro'); return; }
 
   reportItems = items.filter(i => {
     if (i.estado !== 'almacen') return false;
-    const val = currentFilterType === 'cliente' ? String(i.cliente||'') : String(i.elemento||'');
-    return val.toLowerCase().includes(q.toLowerCase());
+    const matchCliente  = !qCliente  || String(i.cliente||'').toLowerCase().includes(qCliente);
+    const matchElemento = !qElemento || String(i.elemento||'').toLowerCase().includes(qElemento);
+    return matchCliente && matchElemento;
   });
 
   if (reportItems.length === 0) {
@@ -1509,15 +1506,51 @@ function generarVistaPrevia() {
     </tr>
   `).join('');
 
-  const label = currentFilterType === 'cliente' ? 'Cliente' : 'Elemento';
-  document.getElementById('report-preview-title').textContent = `${label}: ${q}`;
+  const qC = document.getElementById('report-search-cliente').value.trim();
+  const qE = document.getElementById('report-search-elemento').value.trim();
+  const parts = [qC && `Cliente: ${qC}`, qE && `Elemento: ${qE}`].filter(Boolean);
+  const label = parts.join(' · ');
+  document.getElementById('report-preview-title').textContent = label;
   document.getElementById('report-preview-count').textContent = `${reportItems.length} elementos`;
   document.getElementById('report-preview-container').style.display = 'block';
+}
+
+async function urlToBase64(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      try { resolve(canvas.toDataURL('image/jpeg', 0.8)); }
+      catch(e) { resolve(null); }
+    };
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
 }
 
 async function descargarPDF() {
   const btn = document.getElementById('btn-pdf');
   btn.disabled = true;
+  btn.textContent = '⏳ Cargando fotos...';
+
+  // Preload all photos
+  const imageCache = {};
+  for (const item of reportItems) {
+    if (item.foto) {
+      if (item.foto.startsWith('data:')) {
+        imageCache[item.id] = item.foto;
+      } else {
+        // Convert Drive URL to base64
+        const b64 = await urlToBase64(item.foto);
+        if (b64) imageCache[item.id] = b64;
+      }
+    }
+  }
+
   btn.textContent = '⏳ Generando PDF...';
 
   try {
@@ -1542,12 +1575,14 @@ async function descargarPDF() {
     // Title
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(16); doc.setFont('helvetica', 'bold');
-    const tipoLabel = currentFilterType === 'cliente' ? 'Cliente' : 'Elemento';
-    const searchVal = document.getElementById('report-search').value.trim();
-    doc.text(`Inventario de ${searchVal}`, margin + 28, 13);
+    const qCpdf = document.getElementById('report-search-cliente').value.trim();
+    const qEpdf = document.getElementById('report-search-elemento').value.trim();
+    const titleParts = [qCpdf, qEpdf].filter(Boolean);
+    const pdfTitle = titleParts.length > 0 ? `Inventario de ${titleParts.join(' · ')}` : 'Inventario';
+    doc.text(pdfTitle, margin + 28, 13);
     doc.setFontSize(10); doc.setFont('helvetica', 'normal');
     doc.setTextColor(180, 200, 220);
-    doc.text(`Almacén Quasar · Filtrado por ${tipoLabel}`, margin + 28, 20);
+    doc.text('Almacén Quasar · Reporte de Inventario', margin + 28, 20);
     doc.setTextColor(255,255,255);
     doc.text(`Generado: ${fecha}`, pageW - margin, 13, { align: 'right' });
     doc.text(`${reportItems.length} elementos`, pageW - margin, 20, { align: 'right' });
@@ -1599,19 +1634,16 @@ async function descargarPDF() {
       doc.line(margin, y + rowH, pageW - margin, y + rowH);
 
       // Photo
-      if (item.foto && item.foto.startsWith('data:')) {
+      const fotoData = imageCache[item.id] || null;
+      if (fotoData) {
         try {
-          doc.addImage(item.foto, 'JPEG', margin + 1, y + 1, 34, 34);
+          doc.addImage(fotoData, 'JPEG', margin + 1, y + 1, 34, 34);
         } catch(e) {
-          doc.setTextColor(156,163,175); doc.setFontSize(18);
-          doc.text('📷', margin + 4, y + 13);
+          doc.setFillColor(243,244,246);
+          doc.rect(margin + 1, y + 1, 34, 34, 'F');
+          doc.setTextColor(156,163,175); doc.setFontSize(7);
+          doc.text('Sin foto', margin + 3, y + 20);
         }
-      } else if (item.foto) {
-        // External URL - show placeholder
-        doc.setFillColor(243,244,246);
-        doc.rect(margin + 1, y + 1, 34, 34, 'F');
-        doc.setTextColor(156,163,175); doc.setFontSize(7);
-        doc.text('Sin foto', margin + 3, y + 20);
       } else {
         doc.setFillColor(243,244,246);
         doc.rect(margin + 1, y + 1, 34, 34, 'F');
