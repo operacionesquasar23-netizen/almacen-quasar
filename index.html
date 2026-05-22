@@ -368,7 +368,63 @@ body {
 .move-type-btn.active-salida { border-color: var(--red); background: var(--red-light); color: var(--red); }
 
 input[type="file"] { display: none; }
+
+/* ══ REPORTES ══════════════════════════════ */
+.report-topbar {
+  background: var(--navy); padding: 48px 20px 20px;
+  display: flex; align-items: center; gap: 12px;
+}
+.report-body { padding: 20px; flex: 1; overflow-y: auto; padding-bottom: 100px; }
+@media (min-width: 768px) { .report-body { padding: 24px 32px 100px; } }
+
+.report-filter-card {
+  background: #fff; border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 20px;
+  margin-bottom: 20px; border: 1px solid var(--gray-100);
+}
+.report-filter-title { font-size: 13px; font-weight: 600; color: var(--gray-500);
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; }
+.filter-type-row { display: flex; gap: 8px; margin-bottom: 14px; }
+.filter-type-btn {
+  flex: 1; padding: 10px; border-radius: var(--radius-sm);
+  border: 2px solid var(--gray-200); background: #fff;
+  font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; color: var(--gray-600);
+}
+.filter-type-btn.active { border-color: var(--navy); background: var(--accent-light); color: var(--navy); }
+
+.report-preview { background: #fff; border-radius: var(--radius);
+  box-shadow: var(--shadow); border: 1px solid var(--gray-100); overflow: hidden; }
+.report-preview-header { padding: 14px 16px; background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-100); display: flex; justify-content: space-between; align-items: center; }
+.report-preview-title { font-size: 13px; font-weight: 600; color: var(--gray-700); }
+.report-count { font-size: 12px; color: var(--gray-500); }
+
+.report-table { width: 100%; border-collapse: collapse; }
+.report-table th { padding: 10px 12px; background: var(--navy); color: #fff;
+  font-size: 11px; font-weight: 600; text-align: left; text-transform: uppercase; letter-spacing: 0.5px; }
+.report-table td { padding: 10px 12px; border-bottom: 1px solid var(--gray-100);
+  font-size: 12px; color: var(--gray-700); vertical-align: middle; }
+.report-table tr:last-child td { border-bottom: none; }
+.report-table tr:nth-child(even) td { background: var(--gray-50); }
+.report-thumb { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; }
+.report-placeholder { width: 48px; height: 48px; border-radius: 6px;
+  background: var(--gray-100); display: flex; align-items: center; justify-content: center;
+  font-size: 20px; color: var(--gray-400); }
+
+.btn-download {
+  background: var(--navy); color: #fff; border: none;
+  border-radius: var(--radius-sm); padding: 12px 24px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 8px;
+  transition: opacity 0.15s;
+}
+.btn-download:active { opacity: 0.8; }
+.btn-download:disabled { opacity: 0.5; cursor: not-allowed; }
+.report-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -554,6 +610,60 @@ if (sessionStorage.getItem('quasar-auth') === '1') {
   </div>
 </div>
 
+
+<!-- SCREEN: REPORTES -->
+<div class="screen" id="screen-reportes">
+  <div class="report-topbar">
+    <button class="back-btn" onclick="showScreen('screen-inventario')">←</button>
+    <div class="detail-title">Generar Reporte</div>
+  </div>
+  <div class="report-body">
+    <div class="report-filter-card">
+      <div class="report-filter-title">Filtrar por</div>
+      <div class="filter-type-row">
+        <button class="filter-type-btn active" id="filter-btn-cliente" onclick="setFilterType('cliente')">👤 Cliente</button>
+        <button class="filter-type-btn" id="filter-btn-elemento" onclick="setFilterType('elemento')">📦 Elemento</button>
+      </div>
+      <div class="form-group" style="margin:0 0 14px">
+        <input class="form-input" id="report-search" placeholder="Ej: Lindley, Cabecera Mueble..." type="text" oninput="buscarReporte()">
+      </div>
+      <div id="report-suggestions" style="display:none; background:#fff; border:1px solid var(--gray-200); border-radius:var(--radius-sm); margin-top:-10px; margin-bottom:14px; max-height:160px; overflow-y:auto;"></div>
+      <button class="btn-primary" onclick="generarVistaPrevia()" style="margin:0">Ver vista previa</button>
+    </div>
+
+    <div id="report-preview-container" style="display:none;">
+      <div class="report-preview">
+        <div class="report-preview-header">
+          <span class="report-preview-title" id="report-preview-title">Resultados</span>
+          <span class="report-count" id="report-preview-count"></span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="report-table" id="report-table">
+            <thead>
+              <tr>
+                <th>Foto</th>
+                <th>Fecha Ingreso</th>
+                <th>Código</th>
+                <th>Elemento</th>
+                <th>Cliente</th>
+                <th>Campaña</th>
+                <th>Cant.</th>
+                <th>Tienda</th>
+              </tr>
+            </thead>
+            <tbody id="report-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="report-actions">
+        <button class="btn-download" id="btn-pdf" onclick="descargarPDF()">
+          📄 Descargar PDF
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav">
   <button class="nav-btn active" id="nav-inventario" onclick="showScreen('screen-inventario'); setNav('nav-inventario')">
@@ -564,7 +674,7 @@ if (sessionStorage.getItem('quasar-auth') === '1') {
     <span class="nav-icon">➕</span>
     <span>Nuevo</span>
   </button>
-  <button class="nav-btn" id="nav-stats" onclick="showStatsScreen(); setNav('nav-stats')">
+  <button class="nav-btn" id="nav-stats" onclick="showScreen('screen-reportes'); setNav('nav-stats')">
     <span class="nav-icon">📊</span>
     <span>Resumen</span>
   </button>
@@ -680,6 +790,7 @@ function showScreen(id) {
   document.getElementById(id).classList.add('active');
   if (id === 'screen-inventario') { renderList(); updateStats(); setNav('nav-inventario'); }
   if (id === 'screen-nuevo') { resetNewForm(); setNav('nav-nuevo'); }
+  if (id === 'screen-reportes') { setNav('nav-stats'); }
 }
 
 function setNav(activeId) {
@@ -1319,6 +1430,225 @@ function removePhoto() {
   }
   closeModal('modal-foto');
   showToast('Foto eliminada');
+}
+
+
+// ============ REPORTES ============
+let currentFilterType = 'cliente';
+let reportItems = [];
+
+function setFilterType(type) {
+  currentFilterType = type;
+  document.getElementById('filter-btn-cliente').className = 'filter-type-btn' + (type === 'cliente' ? ' active' : '');
+  document.getElementById('filter-btn-elemento').className = 'filter-type-btn' + (type === 'elemento' ? ' active' : '');
+  document.getElementById('report-search').placeholder = type === 'cliente' ? 'Ej: Lindley, Backus, Unilever...' : 'Ej: Cabecera Mueble, Lateral...';
+  document.getElementById('report-suggestions').style.display = 'none';
+  document.getElementById('report-search').value = '';
+  document.getElementById('report-preview-container').style.display = 'none';
+}
+
+function buscarReporte() {
+  const q = document.getElementById('report-search').value.toLowerCase().trim();
+  const sugg = document.getElementById('report-suggestions');
+  if (!q || q.length < 2) { sugg.style.display = 'none'; return; }
+
+  // Get unique values
+  const valores = [...new Set(
+    items
+      .filter(i => i.estado === 'almacen')
+      .map(i => currentFilterType === 'cliente' ? i.cliente : i.elemento)
+      .filter(v => v && String(v).toLowerCase().includes(q))
+  )].slice(0, 8);
+
+  if (valores.length === 0) { sugg.style.display = 'none'; return; }
+
+  sugg.style.display = 'block';
+  sugg.innerHTML = valores.map(v => 
+    `<div onclick="seleccionarSugerencia('${String(v).replace(/'/g,"\'")}'')" 
+      style="padding:10px 14px; cursor:pointer; font-size:13px; border-bottom:1px solid var(--gray-100);"
+      onmouseover="this.style.background='var(--gray-50)'" 
+      onmouseout="this.style.background=''">${v}</div>`
+  ).join('');
+}
+
+function seleccionarSugerencia(val) {
+  document.getElementById('report-search').value = val;
+  document.getElementById('report-suggestions').style.display = 'none';
+  generarVistaPrevia();
+}
+
+function generarVistaPrevia() {
+  const q = document.getElementById('report-search').value.trim();
+  if (!q) { showToast('⚠️ Escribe un valor para filtrar'); return; }
+
+  reportItems = items.filter(i => {
+    if (i.estado !== 'almacen') return false;
+    const val = currentFilterType === 'cliente' ? String(i.cliente||'') : String(i.elemento||'');
+    return val.toLowerCase().includes(q.toLowerCase());
+  });
+
+  if (reportItems.length === 0) {
+    showToast('No se encontraron elementos');
+    return;
+  }
+
+  // Render preview table
+  const tbody = document.getElementById('report-tbody');
+  tbody.innerHTML = reportItems.map(item => `
+    <tr>
+      <td>${item.foto 
+        ? `<img src="${item.foto}" class="report-thumb" onerror="this.parentElement.innerHTML='<div class=report-placeholder>📷</div>'">`
+        : '<div class="report-placeholder">📷</div>'}</td>
+      <td>${formatDate(item.fechaIngreso)}</td>
+      <td style="font-family:monospace">${item.codigo||'—'}</td>
+      <td><strong>${item.elemento||'—'}</strong></td>
+      <td>${item.cliente||'—'}</td>
+      <td>${item.campana||'—'}</td>
+      <td style="text-align:center">${item.cant||'—'}</td>
+      <td>${item.tienda||'—'}</td>
+    </tr>
+  `).join('');
+
+  const label = currentFilterType === 'cliente' ? 'Cliente' : 'Elemento';
+  document.getElementById('report-preview-title').textContent = `${label}: ${q}`;
+  document.getElementById('report-preview-count').textContent = `${reportItems.length} elementos`;
+  document.getElementById('report-preview-container').style.display = 'block';
+}
+
+async function descargarPDF() {
+  const btn = document.getElementById('btn-pdf');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generando PDF...';
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    
+    const label = document.getElementById('report-preview-title').textContent;
+    const fecha = new Date().toLocaleDateString('es-PE');
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 14;
+
+    // Header
+    doc.setFillColor(15, 39, 68);
+    doc.rect(0, 0, pageW, 22, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14); doc.setFont('helvetica', 'bold');
+    doc.text('Almacén Quasar', margin, 13);
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+    doc.text(`Reporte: ${label}`, margin, 19);
+    doc.text(`Generado: ${fecha}`, pageW - margin, 19, { align: 'right' });
+    doc.text(`${reportItems.length} elementos`, pageW - margin, 13, { align: 'right' });
+
+    // Table headers
+    const cols = [
+      { label: 'FOTO', w: 22 },
+      { label: 'FECHA INGRESO', w: 28 },
+      { label: 'CÓDIGO', w: 22 },
+      { label: 'ELEMENTO', w: 50 },
+      { label: 'CLIENTE', w: 35 },
+      { label: 'CAMPAÑA', w: 45 },
+      { label: 'CANT', w: 14 },
+      { label: 'TIENDA', w: 51 },
+    ];
+
+    let y = 30;
+    const rowH = 20;
+
+    function drawHeaders(yPos) {
+      doc.setFillColor(15, 39, 68);
+      doc.rect(margin, yPos, pageW - margin*2, 8, 'F');
+      doc.setTextColor(255,255,255);
+      doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+      let x = margin;
+      cols.forEach(col => {
+        doc.text(col.label, x + 2, yPos + 5.5);
+        x += col.w;
+      });
+      return yPos + 8;
+    }
+
+    y = drawHeaders(y);
+
+    // Rows
+    for (let idx = 0; idx < reportItems.length; idx++) {
+      const item = reportItems[idx];
+      
+      if (y + rowH > pageH - 14) {
+        doc.addPage();
+        y = 14;
+        y = drawHeaders(y);
+      }
+
+      // Row background
+      doc.setFillColor(idx % 2 === 0 ? 255 : 249, idx % 2 === 0 ? 255 : 250, idx % 2 === 0 ? 255 : 251);
+      doc.rect(margin, y, pageW - margin*2, rowH, 'F');
+      doc.setDrawColor(229, 231, 235);
+      doc.line(margin, y + rowH, pageW - margin, y + rowH);
+
+      // Photo
+      if (item.foto && item.foto.startsWith('data:')) {
+        try {
+          doc.addImage(item.foto, 'JPEG', margin + 1, y + 1, 18, 18);
+        } catch(e) {
+          doc.setTextColor(156,163,175); doc.setFontSize(18);
+          doc.text('📷', margin + 4, y + 13);
+        }
+      } else if (item.foto) {
+        // External URL - show placeholder
+        doc.setFillColor(243,244,246);
+        doc.rect(margin + 1, y + 1, 18, 18, 'F');
+        doc.setTextColor(156,163,175); doc.setFontSize(7);
+        doc.text('Sin foto', margin + 3, y + 11);
+      } else {
+        doc.setFillColor(243,244,246);
+        doc.rect(margin + 1, y + 1, 18, 18, 'F');
+        doc.setTextColor(156,163,175); doc.setFontSize(7);
+        doc.text('Sin foto', margin + 3, y + 11);
+      }
+
+      // Text data
+      doc.setTextColor(55, 65, 81);
+      doc.setFontSize(8); doc.setFont('helvetica', 'normal');
+      const vals = [
+        '',
+        formatDate(item.fechaIngreso),
+        String(item.codigo||'—'),
+        String(item.elemento||'—').substring(0,30),
+        String(item.cliente||'—').substring(0,20),
+        String(item.campana||'—').substring(0,28),
+        String(item.cant||'—'),
+        String(item.tienda||'—').substring(0,30),
+      ];
+      let x = margin;
+      vals.forEach((val, i) => {
+        if (i > 0) doc.text(val, x + 2, y + 11);
+        x += cols[i].w;
+      });
+
+      y += rowH;
+    }
+
+    // Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8); doc.setTextColor(156,163,175);
+      doc.text(`Página ${i} de ${pageCount}`, pageW/2, pageH - 6, { align: 'center' });
+    }
+
+    const filename = `reporte_${label.replace(/[^a-zA-Z0-9]/g,'_')}_${fecha.replace(/\//g,'-')}.pdf`;
+    doc.save(filename);
+    showToast('✅ PDF descargado');
+
+  } catch(err) {
+    console.error(err);
+    showToast('❌ Error generando PDF: ' + err.message);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '📄 Descargar PDF';
 }
 
 // ============ INIT ============
