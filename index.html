@@ -625,6 +625,7 @@ if (sessionStorage.getItem('quasar-auth') === '1') {
 
 <input type="file" id="camera-input" accept="image/*" capture="environment" onchange="handlePhotoCapture(event)">
 <input type="file" id="gallery-input" accept="image/*" onchange="handlePhotoCapture(event)">
+<input type="file" id="any-input" accept="image/*" onchange="handlePhotoCapture(event)">
 
 <div class="toast" id="toast"></div>
 
@@ -893,11 +894,18 @@ function openFotoModal() {
 
 function triggerCamera() {
   closeModal('modal-foto');
-  document.getElementById('camera-input').click();
+  // Save current item ID to sessionStorage before opening camera
+  sessionStorage.setItem('pendingPhotoItemId', currentItemId);
+  setTimeout(() => {
+    document.getElementById('camera-input').click();
+  }, 300);
 }
 function triggerGallery() {
   closeModal('modal-foto');
-  document.getElementById('gallery-input').click();
+  sessionStorage.setItem('pendingPhotoItemId', currentItemId);
+  setTimeout(() => {
+    document.getElementById('gallery-input').click();
+  }, 300);
 }
 
 function handlePhotoCapture(e) {
@@ -1214,6 +1222,30 @@ function removeFotoLocal(itemId) {
   localStorage.setItem('quasar-fotos', JSON.stringify(fotos));
 }
 
+
+// Compress image before upload - fixes Android memory issues
+function compressImage(base64, maxWidth, quality) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+      if (width > maxWidth) {
+        height = Math.round(height * maxWidth / width);
+        width = maxWidth;
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(base64);
+    img.src = base64;
+  });
+}
+
 // Subir foto a Google Drive via Apps Script
 async function uploadPhotoToDrive(itemId, imageData, fileName) {
   try {
@@ -1239,14 +1271,25 @@ async function uploadPhotoToDrive(itemId, imageData, fileName) {
 function handlePhotoCapture(e) {
   const file = e.target.files[0];
   if (!file) return;
+  
+  // Restore currentItemId from sessionStorage in case app reloaded
+  if (!currentItemId) {
+    currentItemId = sessionStorage.getItem('pendingPhotoItemId');
+  }
+  
   const item = items.find(i => i.id === currentItemId);
-  if (!item) return;
+  if (!item) {
+    showToast('⚠️ Error: recarga la app e intenta de nuevo');
+    return;
+  }
 
   showToast('📤 Subiendo foto...');
 
   const reader = new FileReader();
   reader.onload = async (ev) => {
-    const imageData = ev.target.result;
+    // Comprimir imagen antes de subir
+    const imageData = await compressImage(ev.target.result, 1200, 0.75);
+    
     // Mostrar preview local inmediatamente
     item.foto = imageData;
     saveFoto(item.id, imageData);
