@@ -144,7 +144,7 @@ body {
   display: flex; align-items: center; justify-content: center;
   font-size: 24px; overflow: hidden;
 }
-.item-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+.item-thumb img { width: 100%; height: 100%; object-fit: contain; border-radius: 10px; background: var(--gray-100); }
 .item-thumb.has-photo { background: var(--gray-200); }
 
 .item-info { flex: 1; min-width: 0; }
@@ -213,14 +213,14 @@ body {
 
 .photo-area {
   background: var(--gray-100); border-radius: var(--radius);
-  height: 180px; display: flex; flex-direction: column;
+  height: 260px; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 8px;
   margin-bottom: 16px; cursor: pointer; position: relative;
   overflow: hidden; border: 2px dashed var(--gray-200);
   transition: border-color 0.2s;
 }
 .photo-area:active { border-color: var(--accent); }
-.photo-area img { width: 100%; height: 100%; object-fit: cover; position: absolute; }
+.photo-area img { width: 100%; height: 100%; object-fit: contain; position: absolute; background: var(--gray-100); }
 .photo-area-icon { font-size: 36px; color: var(--gray-400); z-index: 1; }
 .photo-area-text { font-size: 13px; color: var(--gray-500); z-index: 1; }
 .photo-overlay {
@@ -407,7 +407,7 @@ input[type="file"] { display: none; }
   font-size: 12px; color: var(--gray-700); vertical-align: middle; }
 .report-table tr:last-child td { border-bottom: none; }
 .report-table tr:nth-child(even) td { background: var(--gray-50); }
-.report-thumb { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; }
+.report-thumb { width: 48px; height: 48px; border-radius: 6px; object-fit: contain; background: var(--gray-100); }
 .report-placeholder { width: 48px; height: 48px; border-radius: 6px;
   background: var(--gray-100); display: flex; align-items: center; justify-content: center;
   font-size: 20px; color: var(--gray-400); }
@@ -1349,6 +1349,7 @@ function compressImage(base64, maxWidth, quality) {
       const canvas = document.createElement('canvas');
       let width = img.width;
       let height = img.height;
+      // Maintain aspect ratio
       if (width > maxWidth) {
         height = Math.round(height * maxWidth / width);
         width = maxWidth;
@@ -1356,6 +1357,9 @@ function compressImage(base64, maxWidth, quality) {
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d');
+      // White background to avoid transparency issues
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, width, height);
       ctx.drawImage(img, 0, 0, width, height);
       resolve(canvas.toDataURL('image/jpeg', quality));
     };
@@ -1640,7 +1644,23 @@ async function descargarPDF() {
       const fotoData = imageCache[item.id] || null;
       if (fotoData) {
         try {
-          doc.addImage(fotoData, 'JPEG', margin + 1, y + 1, 34, 34);
+          // Maintain aspect ratio in PDF
+          const tmpImg = new Image();
+          tmpImg.src = fotoData;
+          const imgW = tmpImg.naturalWidth || 1;
+          const imgH = tmpImg.naturalHeight || 1;
+          const maxDim = 34;
+          let drawW, drawH;
+          if (imgW > imgH) {
+            drawW = maxDim;
+            drawH = Math.round(maxDim * imgH / imgW);
+          } else {
+            drawH = maxDim;
+            drawW = Math.round(maxDim * imgW / imgH);
+          }
+          const offsetX = margin + 1 + (maxDim - drawW) / 2;
+          const offsetY = y + 1 + (maxDim - drawH) / 2;
+          doc.addImage(fotoData, 'JPEG', offsetX, offsetY, drawW, drawH);
         } catch(e) {
           doc.setFillColor(243,244,246);
           doc.rect(margin + 1, y + 1, 34, 34, 'F');
