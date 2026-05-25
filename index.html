@@ -1598,19 +1598,19 @@ async function descargarPDF() {
 
     // Table headers
     const cols = [
-      { label: 'FOTO', w: 32 },
-      { label: 'FECHA', w: 18 },
-      { label: 'COD', w: 14 },
-      { label: 'ELEMENTO', w: 26 },
-      { label: 'CLIENTE', w: 22 },
-      { label: 'CAMPAÑA', w: 26 },
-      { label: 'CANT', w: 10 },
-      { label: 'TIENDA', w: 26 },
-      { label: 'MEDIDAS', w: 26 },
+      { label: 'FOTO', w: 44 },
+      { label: 'FECHA', w: 24 },
+      { label: 'COD', w: 18 },
+      { label: 'ELEMENTO', w: 36 },
+      { label: 'CLIENTE', w: 30 },
+      { label: 'CAMPAÑA', w: 36 },
+      { label: 'CANT', w: 12 },
+      { label: 'TIENDA', w: 34 },
+      { label: 'MEDIDAS', w: 33 },
     ];
 
     let y = 36;
-    const rowH = 36;
+    const rowH = 42;
 
     function drawHeaders(yPos) {
       doc.setFillColor(15, 39, 68);
@@ -1652,7 +1652,7 @@ async function descargarPDF() {
           tmpImg.src = fotoData;
           const imgW = tmpImg.naturalWidth || 1;
           const imgH = tmpImg.naturalHeight || 1;
-          const maxDim = 34;
+          const maxDim = 40;
           let drawW, drawH;
           if (imgW > imgH) {
             drawW = maxDim;
@@ -1696,7 +1696,7 @@ async function descargarPDF() {
         if (i > 0) {
           const maxW = cols[i].w - 3;
           const lines = doc.splitTextToSize(val, maxW);
-          doc.text(lines[0], x + 2, y + 19); // show first line only to keep row height consistent
+          doc.text(lines[0], x + 2, y + 22); // show first line only to keep row height consistent
         }
         x += cols[i].w;
       });
