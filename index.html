@@ -1684,12 +1684,12 @@ async function descargarPDF() {
         '',
         formatDate(item.fechaIngreso),
         String(item.codigo||'—'),
-        String(item.elemento||'—').substring(0,30),
-        String(item.cliente||'—').substring(0,20),
-        String(item.campana||'—').substring(0,28),
+        String(item.elemento||'—').substring(0,28),
+        String(item.cliente||'—').substring(0,18),
+        String(item.campana||'—').substring(0,26),
         String(item.cant||'—'),
-        String(item.tienda||'—').substring(0,25),
-        String(item.medidas||'—').substring(0,18),
+        String(item.tienda||'—').substring(0,24),
+        String(item.medidas||'—').substring(0,22),
       ];
       let x = margin;
       vals.forEach((val, i) => {
