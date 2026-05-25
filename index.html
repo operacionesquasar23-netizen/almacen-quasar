@@ -653,6 +653,7 @@ if (sessionStorage.getItem('quasar-auth') === '1') {
                 <th>Campaña</th>
                 <th>Cant.</th>
                 <th>Tienda</th>
+                <th>Medidas</th>
               </tr>
             </thead>
             <tbody id="report-tbody"></tbody>
@@ -1510,6 +1511,7 @@ function generarVistaPrevia() {
       <td>${item.campana||'—'}</td>
       <td style="text-align:center">${item.cant||'—'}</td>
       <td>${item.tienda||'—'}</td>
+      <td>${item.medidas||'—'}</td>
     </tr>
   `).join('');
 
@@ -1603,7 +1605,8 @@ async function descargarPDF() {
       { label: 'CLIENTE', w: 35 },
       { label: 'CAMPAÑA', w: 45 },
       { label: 'CANT', w: 14 },
-      { label: 'TIENDA', w: 51 },
+      { label: 'TIENDA', w: 40 },
+      { label: 'MEDIDAS', w: 32 },
     ];
 
     let y = 36;
@@ -1685,7 +1688,8 @@ async function descargarPDF() {
         String(item.cliente||'—').substring(0,20),
         String(item.campana||'—').substring(0,28),
         String(item.cant||'—'),
-        String(item.tienda||'—').substring(0,30),
+        String(item.tienda||'—').substring(0,25),
+        String(item.medidas||'—').substring(0,18),
       ];
       let x = margin;
       vals.forEach((val, i) => {
