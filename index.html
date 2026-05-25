@@ -1693,7 +1693,11 @@ async function descargarPDF() {
       ];
       let x = margin;
       vals.forEach((val, i) => {
-        if (i > 0) doc.text(val, x + 2, y + 19);
+        if (i > 0) {
+          const maxW = cols[i].w - 3;
+          const lines = doc.splitTextToSize(val, maxW);
+          doc.text(lines[0], x + 2, y + 19); // show first line only to keep row height consistent
+        }
         x += cols[i].w;
       });
 
