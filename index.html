@@ -369,6 +369,113 @@ body {
 
 input[type="file"] { display: none; }
 
+/* ══ ALMACENAMIENTO ════════════════════════════ */
+.storage-topbar {
+  background: var(--navy); padding: 48px 20px 20px;
+  display: flex; align-items: center; gap: 12px;
+}
+.storage-body { padding: 16px; flex: 1; overflow-y: auto; padding-bottom: 100px; }
+@media (min-width: 768px) { .storage-body { padding: 20px 32px 100px; } }
+
+.storage-search-card {
+  background: #fff; border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 16px;
+  margin-bottom: 16px; border: 1px solid var(--gray-100);
+  position: relative;
+}
+
+.client-suggestions {
+  position: absolute; left: 0; right: 0; top: 100%;
+  background: #fff; border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm); z-index: 100;
+  max-height: 200px; overflow-y: auto;
+  box-shadow: var(--shadow-md);
+}
+.client-suggestion-item {
+  padding: 12px 16px; cursor: pointer; font-size: 14px;
+  border-bottom: 1px solid var(--gray-100);
+  transition: background 0.1s;
+}
+.client-suggestion-item:hover { background: var(--gray-50); }
+.client-suggestion-item:last-child { border-bottom: none; }
+
+.storage-summary {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 10px; margin-bottom: 16px;
+}
+@media (min-width: 768px) { .storage-summary { grid-template-columns: repeat(4, 1fr); } }
+
+.storage-stat {
+  background: #fff; border-radius: var(--radius-sm);
+  padding: 12px; box-shadow: var(--shadow);
+  border: 1px solid var(--gray-100); text-align: center;
+}
+.storage-stat-num { font-size: 18px; font-weight: 600; font-family: 'DM Mono', monospace; }
+.storage-stat-label { font-size: 10px; color: var(--gray-500); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.4px; }
+
+.status-section { margin-bottom: 14px; }
+.status-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-radius: var(--radius-sm);
+  margin-bottom: 8px; cursor: pointer;
+  font-size: 13px; font-weight: 600;
+}
+.status-header.red { background: var(--red-light); color: var(--red); }
+.status-header.yellow { background: var(--amber-light); color: var(--amber); }
+.status-header.green { background: var(--green-light); color: var(--green); }
+.status-header.gray { background: var(--gray-100); color: var(--gray-600); }
+
+.storage-element-card {
+  background: #fff; border-radius: var(--radius-sm);
+  padding: 12px 14px; margin-bottom: 6px;
+  box-shadow: var(--shadow); border: 1px solid var(--gray-100);
+  display: flex; align-items: center; gap: 12px;
+  cursor: pointer;
+}
+.storage-element-card:active { opacity: 0.8; }
+.storage-el-info { flex: 1; min-width: 0; }
+.storage-el-name { font-size: 13px; font-weight: 500; color: var(--gray-900); }
+.storage-el-meta { font-size: 11px; color: var(--gray-500); margin-top: 2px; }
+.storage-el-price { font-size: 13px; font-weight: 600; color: var(--navy); text-align: right; white-space: nowrap; }
+.storage-el-days { font-size: 11px; color: var(--gray-500); text-align: right; }
+
+.checkbox-custom {
+  width: 20px; height: 20px; border-radius: 4px;
+  border: 2px solid var(--gray-300); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.15s;
+}
+.checkbox-custom.checked { background: var(--navy); border-color: var(--navy); color: #fff; font-size: 12px; }
+
+.cot-form-card {
+  background: #fff; border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 16px;
+  margin-bottom: 16px; border: 1px solid var(--gray-100);
+  display: none;
+}
+.cot-total-bar {
+  background: var(--navy); color: #fff;
+  border-radius: var(--radius-sm); padding: 14px 16px;
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px;
+}
+.cot-total-label { font-size: 13px; opacity: 0.8; }
+.cot-total-amount { font-size: 20px; font-weight: 600; font-family: 'DM Mono', monospace; }
+
+/* Historial de cotizaciones */
+.hist-cot-item {
+  padding: 12px 14px; border-bottom: 1px solid var(--gray-100);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.hist-cot-item:last-child { border-bottom: none; }
+.hist-cot-ncot { font-size: 13px; font-weight: 500; color: var(--navy); }
+.hist-cot-dates { font-size: 11px; color: var(--gray-500); margin-top: 2px; }
+.hist-cot-amount { font-size: 13px; font-weight: 600; color: var(--green); }
+.badge-vigente { background: var(--green-light); color: var(--green); }
+.badge-vencida { background: var(--red-light); color: var(--red); }
+.badge-por-vencer { background: var(--amber-light); color: var(--amber); }
+
+
 /* ══ REPORTES ══════════════════════════════ */
 .report-topbar {
   background: var(--navy); padding: 48px 20px 20px;
@@ -611,6 +718,97 @@ if (sessionStorage.getItem('quasar-auth') === '1') {
 </div>
 
 
+
+<!-- SCREEN: ALMACENAMIENTO -->
+<div class="screen" id="screen-storage">
+  <div class="storage-topbar">
+    <button class="back-btn" onclick="showScreen('screen-inventario')">←</button>
+    <div class="detail-title">Almacenamiento</div>
+  </div>
+  <div class="storage-body">
+
+    <!-- Buscador de cliente -->
+    <div class="storage-search-card">
+      <label class="form-label" style="margin-bottom:8px;display:block">Selecciona un cliente</label>
+      <input class="form-input" id="storage-client-input" placeholder="Escribe el nombre del cliente..."
+        type="text" oninput="buscarClienteStorage()" autocomplete="off">
+      <div class="client-suggestions" id="storage-client-suggestions" style="display:none"></div>
+    </div>
+
+    <!-- Contenido del cliente -->
+    <div id="storage-client-content" style="display:none">
+
+      <!-- Resumen -->
+      <div class="storage-summary">
+        <div class="storage-stat">
+          <div class="storage-stat-num" id="st-sin-cot" style="color:var(--red)">0</div>
+          <div class="storage-stat-label">Sin cotización</div>
+        </div>
+        <div class="storage-stat">
+          <div class="storage-stat-num" id="st-vigente" style="color:var(--green)">0</div>
+          <div class="storage-stat-label">Vigente</div>
+        </div>
+        <div class="storage-stat">
+          <div class="storage-stat-num" id="st-por-vencer" style="color:var(--amber)">0</div>
+          <div class="storage-stat-label">Por vencer</div>
+        </div>
+        <div class="storage-stat">
+          <div class="storage-stat-num" id="st-gracia" style="color:var(--gray-500)">0</div>
+          <div class="storage-stat-label">En gracia</div>
+        </div>
+      </div>
+
+      <!-- Botón nueva cotización -->
+      <button class="btn-primary" onclick="mostrarFormCotizacion()" style="margin-bottom:16px" id="btn-nueva-cot">
+        + Nueva cotización
+      </button>
+
+      <!-- Formulario cotización -->
+      <div class="cot-form-card" id="cot-form">
+        <div class="info-card-header" style="margin:-16px -16px 14px;padding:10px 16px;background:var(--gray-50);border-bottom:1px solid var(--gray-100);font-size:11px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.6px;">
+          Nueva cotización
+        </div>
+        <div class="form-row" style="margin-bottom:12px">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">N° Cotización</label>
+            <input class="form-input" id="cot-numero" placeholder="Ej: COT-001" type="text">
+          </div>
+        </div>
+        <div class="form-row" style="margin-bottom:12px">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Fecha inicio</label>
+            <input class="form-input" id="cot-inicio" type="date">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Fecha fin</label>
+            <input class="form-input" id="cot-fin" type="date">
+          </div>
+        </div>
+        <div class="cot-total-bar">
+          <span class="cot-total-label">Total seleccionado</span>
+          <span class="cot-total-amount" id="cot-total">S/. 0</span>
+        </div>
+        <div class="action-row">
+          <button class="btn-entrada" onclick="guardarCotizacion()">✅ Guardar</button>
+          <button class="btn-salida" onclick="cerrarFormCotizacion()">✕ Cancelar</button>
+        </div>
+      </div>
+
+      <!-- Secciones por estado -->
+      <div id="storage-sections"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: DETALLE ELEMENTO ALMACENAMIENTO -->
+<div class="screen" id="screen-storage-element">
+  <div class="storage-topbar">
+    <button class="back-btn" onclick="showScreen('screen-storage')">←</button>
+    <div class="detail-title" id="storage-el-title">Elemento</div>
+  </div>
+  <div class="storage-body" id="storage-el-body"></div>
+</div>
+
 <!-- SCREEN: REPORTES -->
 <div class="screen" id="screen-reportes">
   <div class="report-topbar">
@@ -796,6 +994,7 @@ function showScreen(id) {
   if (id === 'screen-inventario') { renderList(); updateStats(); setNav('nav-inventario'); }
   if (id === 'screen-nuevo') { resetNewForm(); setNav('nav-nuevo'); }
   if (id === 'screen-reportes') { setNav('nav-stats'); }
+  if (id === 'screen-storage') { setNav('nav-storage'); resetStorage(); }
 }
 
 function setNav(activeId) {
@@ -1444,6 +1643,357 @@ function removePhoto() {
   showToast('Foto eliminada');
 }
 
+
+
+// ============ ALMACENAMIENTO ============
+const PRECIOS = {
+  'lateral': 50, 'eeff': 50, 'isla mdf': 80, 'cabecera mueble': 100,
+  'modulo': 80, 'totem': 50, 'carrito': 50, 'paleta': 80,
+  'macroglorificador': 50, 'cabecera con eeff': 100, 'isla doble': 160,
+  'afiche': 100, 'mueble': 100, 'revestimiento cabecera': 100,
+  'vinil': 100, 'dispensador': 50, 'exhibidor': 50, 'marco de gondola': 50,
+  'cabecera con eeff y pantalla': 100, 'graficas intercambiables cabecera': 100,
+  'graficas intercambiables isla': 80, 'portico': 100, 'revestimiento ruma': 100,
+  'cajonera': 50, 'ruma': 80, 'isla con eeff': 80, 'cabezote': 50,
+  'revestimiento de cooler': 50, 'mega exhibicion': 100, 'arco': 100,
+  'stopper': 0, 'totem triangular': 50, 'anfora': 50,
+  'exhibiciones diferenciadas 1': 160, 'exhibiciones diferenciadas 2': 100,
+  'balcon': 50, 'acrilico': 100
+};
+
+let cotizaciones = [];
+let currentStorageClient = '';
+let selectedForCot = new Set();
+
+function getPrecio(elemento) {
+  const key = String(elemento||'').toLowerCase().trim();
+  for (const [k, v] of Object.entries(PRECIOS)) {
+    if (key.includes(k)) return v;
+  }
+  return 0;
+}
+
+function getDiasEnAlmacen(fechaIngreso) {
+  if (!fechaIngreso) return 0;
+  try {
+    const ingreso = new Date(fechaIngreso);
+    const hoy = new Date();
+    return Math.floor((hoy - ingreso) / (1000 * 60 * 60 * 24));
+  } catch(e) { return 0; }
+}
+
+function getEstadoCotizacion(item) {
+  const dias = getDiasEnAlmacen(item.fechaIngreso);
+  const hoy = new Date();
+  
+  // Buscar cotización activa para este elemento
+  const cotActiva = cotizaciones.find(c => 
+    c['ID_ELEMENTO'] === item.id && 
+    new Date(c['FECHA_FIN']) >= hoy
+  );
+  
+  if (dias < 30) return 'gracia';
+  if (!cotActiva) return 'sin_cot';
+  
+  const diasVence = Math.floor((new Date(cotActiva['FECHA_FIN']) - hoy) / (1000*60*60*24));
+  if (diasVence <= 7) return 'por_vencer';
+  return 'vigente';
+}
+
+function getCotActiva(itemId) {
+  const hoy = new Date();
+  return cotizaciones.find(c => 
+    c['ID_ELEMENTO'] === itemId && 
+    new Date(c['FECHA_FIN']) >= hoy
+  );
+}
+
+function getHistorialCot(itemId) {
+  return cotizaciones
+    .filter(c => c['ID_ELEMENTO'] === itemId)
+    .sort((a,b) => new Date(b['FECHA_INICIO']) - new Date(a['FECHA_INICIO']));
+}
+
+async function cargarCotizaciones() {
+  try {
+    cotizaciones = await fetchJSON('cotizaciones');
+  } catch(e) {
+    cotizaciones = [];
+  }
+}
+
+function resetStorage() {
+  document.getElementById('storage-client-input').value = '';
+  document.getElementById('storage-client-suggestions').style.display = 'none';
+  document.getElementById('storage-client-content').style.display = 'none';
+  selectedForCot.clear();
+  cerrarFormCotizacion();
+  cargarCotizaciones();
+}
+
+function buscarClienteStorage() {
+  const q = document.getElementById('storage-client-input').value.toLowerCase().trim();
+  const sugg = document.getElementById('storage-client-suggestions');
+  if (!q || q.length < 2) { sugg.style.display = 'none'; return; }
+
+  const clientes = [...new Set(
+    items.filter(i => i.estado === 'almacen')
+         .map(i => String(i.cliente||''))
+         .filter(c => c.toLowerCase().includes(q))
+  )].slice(0, 8);
+
+  if (!clientes.length) { sugg.style.display = 'none'; return; }
+  sugg.style.display = 'block';
+  sugg.innerHTML = clientes.map(c =>
+    `<div class="client-suggestion-item" onclick="seleccionarClienteStorage('${c.replace(/'/g,"\'")}'">${c}</div>`
+  ).join('');
+}
+
+function seleccionarClienteStorage(cliente) {
+  currentStorageClient = cliente;
+  document.getElementById('storage-client-input').value = cliente;
+  document.getElementById('storage-client-suggestions').style.display = 'none';
+  renderStorageClient(cliente);
+}
+
+function renderStorageClient(cliente) {
+  const clienteItems = items.filter(i => 
+    i.estado === 'almacen' && String(i.cliente||'') === cliente
+  );
+
+  const grupos = { sin_cot: [], por_vencer: [], vigente: [], gracia: [] };
+  clienteItems.forEach(item => {
+    const estado = getEstadoCotizacion(item);
+    grupos[estado].push(item);
+  });
+
+  // Update stats
+  document.getElementById('st-sin-cot').textContent = grupos.sin_cot.length;
+  document.getElementById('st-vigente').textContent = grupos.vigente.length;
+  document.getElementById('st-por-vencer').textContent = grupos.por_vencer.length;
+  document.getElementById('st-gracia').textContent = grupos.gracia.length;
+
+  const sections = document.getElementById('storage-sections');
+  sections.innerHTML = '';
+
+  const config = [
+    { key: 'sin_cot', label: '🔴 Sin cotización', cls: 'red', showCheck: true },
+    { key: 'por_vencer', label: '🟡 Por vencer', cls: 'yellow', showCheck: true },
+    { key: 'vigente', label: '🟢 Vigente', cls: 'green', showCheck: false },
+    { key: 'gracia', label: '⚪ En gracia', cls: 'gray', showCheck: false },
+  ];
+
+  config.forEach(({ key, label, cls, showCheck }) => {
+    const group = grupos[key];
+    if (!group.length) return;
+
+    const totalGrupo = group.reduce((sum, i) => sum + getPrecio(i.elemento) * (parseInt(i.cant)||1), 0);
+    
+    const div = document.createElement('div');
+    div.className = 'status-section';
+    div.innerHTML = `
+      <div class="status-header ${cls}">
+        ${label} · ${group.length} elemento${group.length>1?'s':''} 
+        ${totalGrupo > 0 ? `· S/. ${totalGrupo}` : ''}
+      </div>
+      ${group.map(item => {
+        const dias = getDiasEnAlmacen(item.fechaIngreso);
+        const precio = getPrecio(item.elemento);
+        const cant = parseInt(item.cant)||1;
+        const subtotal = precio * cant;
+        const cotActiva = getCotActiva(item.id);
+        const checked = selectedForCot.has(item.id);
+        
+        let metaExtra = '';
+        if (key === 'gracia') {
+          const diasRestantes = 30 - dias;
+          metaExtra = `Empieza a pagar en ${diasRestantes} día${diasRestantes>1?'s':''}`;
+        } else if (cotActiva) {
+          const diasVence = Math.floor((new Date(cotActiva['FECHA_FIN']) - new Date()) / (1000*60*60*24));
+          metaExtra = `${cotActiva['N_COT']} · Vence en ${diasVence} día${diasVence>1?'s':''}`;
+        }
+
+        return `<div class="storage-element-card" onclick="abrirElementoStorage('${item.id}')">
+          ${showCheck ? `<div class="checkbox-custom ${checked?'checked':''}" 
+            onclick="event.stopPropagation(); toggleCotCheck('${item.id}')">${checked?'✓':''}</div>` : ''}
+          <div class="storage-el-info">
+            <div class="storage-el-name">${item.elemento||'—'} ${cant>1?`(x${cant})`:''}</div>
+            <div class="storage-el-meta">${item.codigo||'—'} · ${item.tienda||'—'}</div>
+            ${metaExtra ? `<div class="storage-el-meta" style="color:var(--accent)">${metaExtra}</div>` : ''}
+          </div>
+          <div>
+            <div class="storage-el-price">S/. ${subtotal}</div>
+            <div class="storage-el-days">${dias} días</div>
+          </div>
+        </div>`;
+      }).join('')}
+    `;
+    sections.appendChild(div);
+  });
+
+  document.getElementById('storage-client-content').style.display = 'block';
+}
+
+function toggleCotCheck(itemId) {
+  if (selectedForCot.has(itemId)) {
+    selectedForCot.delete(itemId);
+  } else {
+    selectedForCot.add(itemId);
+  }
+  actualizarTotalCot();
+  renderStorageClient(currentStorageClient);
+  if (selectedForCot.size > 0) {
+    document.getElementById('cot-form').style.display = 'block';
+  }
+}
+
+function actualizarTotalCot() {
+  let total = 0;
+  selectedForCot.forEach(id => {
+    const item = items.find(i => i.id === id);
+    if (item) total += getPrecio(item.elemento) * (parseInt(item.cant)||1);
+  });
+  document.getElementById('cot-total').textContent = `S/. ${total}`;
+}
+
+function mostrarFormCotizacion() {
+  document.getElementById('cot-form').style.display = 'block';
+  document.getElementById('cot-form').scrollIntoView({behavior:'smooth'});
+}
+
+function cerrarFormCotizacion() {
+  document.getElementById('cot-form').style.display = 'none';
+  document.getElementById('cot-numero').value = '';
+  document.getElementById('cot-inicio').value = '';
+  document.getElementById('cot-fin').value = '';
+  selectedForCot.clear();
+  actualizarTotalCot();
+}
+
+async function guardarCotizacion() {
+  const nCot = document.getElementById('cot-numero').value.trim();
+  const inicio = document.getElementById('cot-inicio').value;
+  const fin = document.getElementById('cot-fin').value;
+
+  if (!nCot) { showToast('⚠️ Ingresa el número de cotización'); return; }
+  if (!inicio || !fin) { showToast('⚠️ Ingresa las fechas de la cotización'); return; }
+  if (selectedForCot.size === 0) { showToast('⚠️ Selecciona al menos un elemento'); return; }
+
+  const filas = [];
+  const idCot = Date.now().toString();
+
+  selectedForCot.forEach(id => {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    const precio = getPrecio(item.elemento);
+    const cant = parseInt(item.cant)||1;
+    filas.push({
+      id_cot: idCot,
+      n_cot: nCot,
+      id_elemento: item.id,
+      codigo: item.codigo||'',
+      elemento: item.elemento||'',
+      cliente: item.cliente||'',
+      cantidad: cant,
+      precio_unit: precio,
+      total: precio * cant,
+      fecha_inicio: inicio,
+      fecha_fin: fin
+    });
+  });
+
+  showToast('⏳ Guardando cotización...');
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveCotizacion', filas })
+    });
+    const json = await res.json();
+    if (json.success) {
+      showToast(`✅ Cotización ${nCot} guardada — ${filas.length} elemento${filas.length>1?'s':''}`);
+      await cargarCotizaciones();
+      cerrarFormCotizacion();
+      renderStorageClient(currentStorageClient);
+    } else {
+      showToast('❌ Error al guardar');
+    }
+  } catch(e) {
+    showToast('❌ Error de conexión');
+  }
+}
+
+function abrirElementoStorage(itemId) {
+  const item = items.find(i => i.id === itemId);
+  if (!item) return;
+
+  document.getElementById('storage-el-title').textContent = item.elemento || 'Elemento';
+  
+  const dias = getDiasEnAlmacen(item.fechaIngreso);
+  const precio = getPrecio(item.elemento);
+  const cant = parseInt(item.cant)||1;
+  const estado = getEstadoCotizacion(item);
+  const cotActiva = getCotActiva(item.id);
+  const historial = getHistorialCot(item.id);
+
+  const estadoBadge = {
+    sin_cot: '<span class="badge badge-despachado">Sin cotización</span>',
+    por_vencer: '<span class="badge badge-foto">Por vencer</span>',
+    vigente: '<span class="badge badge-almacen">Vigente</span>',
+    gracia: '<span class="badge" style="background:var(--gray-100);color:var(--gray-600)">En gracia</span>'
+  }[estado];
+
+  const cotActivaHTML = cotActiva ? `
+    <div class="field-row"><span class="field-label">N° Cotización</span><span class="field-value">${cotActiva['N_COT']}</span></div>
+    <div class="field-row"><span class="field-label">Vigencia</span><span class="field-value">${formatDate(cotActiva['FECHA_INICIO'])} — ${formatDate(cotActiva['FECHA_FIN'])}</span></div>
+    <div class="field-row"><span class="field-label">Monto</span><span class="field-value" style="color:var(--green);font-weight:600">S/. ${cotActiva['TOTAL']}</span></div>
+  ` : `<div style="padding:12px 14px;font-size:13px;color:var(--gray-400)">Sin cotización activa</div>`;
+
+  const historialHTML = historial.length ? historial.map(c => {
+    const hoy = new Date();
+    const vencida = new Date(c['FECHA_FIN']) < hoy;
+    const badgeCls = vencida ? 'badge-despachado' : 'badge-almacen';
+    const badgeTxt = vencida ? 'Vencida' : 'Vigente';
+    return `<div class="hist-cot-item">
+      <div>
+        <div class="hist-cot-ncot">${c['N_COT']}</div>
+        <div class="hist-cot-dates">${formatDate(c['FECHA_INICIO'])} → ${formatDate(c['FECHA_FIN'])}</div>
+        <span class="badge ${badgeCls}" style="font-size:10px">${badgeTxt}</span>
+      </div>
+      <div class="hist-cot-amount">S/. ${c['TOTAL']}</div>
+    </div>`;
+  }).join('') : '<div style="padding:12px 14px;font-size:13px;color:var(--gray-400)">Sin historial de cotizaciones</div>';
+
+  const totalHistorico = historial.reduce((sum, c) => sum + (parseFloat(c['TOTAL'])||0), 0);
+
+  document.getElementById('storage-el-body').innerHTML = `
+    <div class="info-card" style="margin-bottom:12px">
+      <div class="info-card-header">Información</div>
+      <div class="field-row"><span class="field-label">Código</span><span class="field-value">${item.codigo||'—'}</span></div>
+      <div class="field-row"><span class="field-label">Cliente</span><span class="field-value">${item.cliente||'—'}</span></div>
+      <div class="field-row"><span class="field-label">Tienda</span><span class="field-value">${item.tienda||'—'}</span></div>
+      <div class="field-row"><span class="field-label">Fecha ingreso</span><span class="field-value">${formatDate(item.fechaIngreso)}</span></div>
+      <div class="field-row"><span class="field-label">Días en almacén</span><span class="field-value" style="font-weight:600;color:${dias>30?'var(--red)':'var(--green)'}">${dias} días</span></div>
+      <div class="field-row"><span class="field-label">Precio mensual</span><span class="field-value">S/. ${precio} x ${cant} = <strong>S/. ${precio*cant}</strong></span></div>
+      <div class="field-row"><span class="field-label">Estado</span><span class="field-value">${estadoBadge}</span></div>
+    </div>
+
+    <div class="info-card" style="margin-bottom:12px">
+      <div class="info-card-header">Cotización actual</div>
+      ${cotActivaHTML}
+    </div>
+
+    <div class="info-card" style="margin-bottom:16px">
+      <div class="info-card-header" style="display:flex;justify-content:space-between">
+        <span>Historial de cotizaciones</span>
+        ${totalHistorico > 0 ? `<span style="color:var(--green);font-weight:600">Total: S/. ${totalHistorico}</span>` : ''}
+      </div>
+      ${historialHTML}
+    </div>
+  `;
+
+  showScreen('screen-storage-element');
+}
 
 // ============ REPORTES ============
 let reportItems = [];
