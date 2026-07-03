@@ -1748,9 +1748,11 @@ function buscarClienteStorage() {
 
   if (!clientes.length) { sugg.style.display = 'none'; return; }
   sugg.style.display = 'block';
-  sugg.innerHTML = clientes.map(c =>
-    `<div class="client-suggestion-item" onclick="seleccionarClienteStorage('${c.replace(/'/g,"\'")}'">${c}</div>`
-  ).join('');
+  sugg.innerHTML = clientes.map((c, idx) => {
+    window._storageClients = window._storageClients || [];
+    window._storageClients[idx] = c;
+    return `<div class="client-suggestion-item" onclick="seleccionarClienteStorage(window._storageClients[${idx}])">${c}</div>`;
+  }).join('');
 }
 
 function seleccionarClienteStorage(cliente) {
