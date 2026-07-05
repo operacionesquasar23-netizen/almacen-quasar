@@ -1826,16 +1826,22 @@ function seleccionarClienteStorage(cliente) {
   renderStorageClient(cliente);
 }
 
-function getMesesAcumulados(dias) {
-  return Math.max(0, Math.floor((dias - 30) / 30));
+function getDiasCobro(dias) {
+  return Math.max(0, dias - 30);
 }
 
 function getTotalAcumulado(item) {
   const dias = getDiasEnAlmacen(item.fechaIngreso);
-  const meses = getMesesAcumulados(dias);
+  const diasCobro = getDiasCobro(dias);
+  if (diasCobro === 0) return 0;
   const precio = getPrecio(item.elemento);
   const cant = parseInt(item.cant)||1;
-  return meses * precio * cant;
+  const precioPorDia = precio / 30;
+  return Math.round(diasCobro * precioPorDia * cant);
+}
+
+function getMesesAcumulados(dias) {
+  return Math.max(0, Math.floor((dias - 30) / 30));
 }
 
 function renderStorageClient(cliente) {
@@ -1927,11 +1933,13 @@ function renderStorageClient(cliente) {
             ${metaExtra ? `<div class="storage-el-meta" style="color:var(--accent)">${metaExtra}</div>` : ''}
 
           </div>
-          <div style="text-align:right">
-            <div class="storage-el-price" style="color:var(--red);font-size:14px">S/. ${totalAcum > 0 ? totalAcum.toLocaleString() : '—'}</div>
-            <div class="storage-el-days" style="font-size:10px">acumulado</div>
-            <div style="font-size:11px;color:var(--gray-500);margin-top:2px">S/. ${subtotal}/mes</div>
-            <div class="storage-el-days">${dias} días</div>
+          <div style="text-align:right;min-width:80px">
+            ${totalAcum > 0 
+              ? `<div style="font-size:14px;font-weight:700;color:var(--red)">S/. ${totalAcum.toLocaleString()}</div>
+                 <div style="font-size:10px;color:var(--red);opacity:0.7">${getDiasCobro(dias)} días cobro</div>`
+              : `<div style="font-size:11px;color:var(--gray-400)">${dias < 30 ? 'En gracia' : '—'}</div>`
+            }
+            <div style="font-size:10px;color:var(--gray-400);margin-top:2px">${dias} días total</div>
           </div>
         </div>`;
       }).join('')}
@@ -2083,7 +2091,9 @@ function abrirElementoStorage(itemId) {
       <div class="field-row"><span class="field-label">Fecha ingreso</span><span class="field-value">${formatDate(item.fechaIngreso)}</span></div>
       <div class="field-row"><span class="field-label">Días en almacén</span><span class="field-value" style="font-weight:600;color:${dias>30?'var(--red)':'var(--green)'}">${dias} días</span></div>
       <div class="field-row"><span class="field-label">Precio mensual</span><span class="field-value">S/. ${precio} x ${cant} = <strong>S/. ${precio*cant}</strong></span></div>
-      <div class="field-row"><span class="field-label">Meses acumulados</span><span class="field-value">${getMesesAcumulados(dias)} mes${getMesesAcumulados(dias)!==1?'es':''}</span></div>
+      <div class="field-row"><span class="field-label">Días en gracia</span><span class="field-value">30 días</span></div>
+      <div class="field-row"><span class="field-label">Días a cobrar</span><span class="field-value" style="font-weight:600">${getDiasCobro(dias)} días</span></div>
+      <div class="field-row"><span class="field-label">Precio por día</span><span class="field-value">S/. ${(precio/30).toFixed(2)} × ${cant}</span></div>
       <div class="field-row"><span class="field-label">Total acumulado</span><span class="field-value" style="color:var(--red);font-weight:700;font-size:15px">S/. ${getTotalAcumulado(item).toLocaleString()}</span></div>
       <div class="field-row"><span class="field-label">Estado</span><span class="field-value">${estadoBadge}</span></div>
     </div>
