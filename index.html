@@ -822,7 +822,7 @@ if (sessionStorage.getItem('quasar-auth') === '1') {
 <!-- SCREEN: DETALLE ELEMENTO ALMACENAMIENTO -->
 <div class="screen" id="screen-storage-element">
   <div class="storage-topbar">
-    <button class="back-btn" onclick="showScreen('screen-storage')">←</button>
+    <button class="back-btn" onclick="volverAStorage()">←</button>
     <div class="detail-title" id="storage-el-title">Elemento</div>
   </div>
   <div class="storage-body" id="storage-el-body"></div>
@@ -1760,20 +1760,36 @@ async function cargarCotizaciones() {
 async function cargarPrecios() {
   try {
     const rows = await fetchJSON('precios');
+    console.log('Filas precios recibidas:', rows.length);
+    if (rows.length > 0) console.log('Primera fila precios:', JSON.stringify(rows[0]));
     rows.forEach(r => {
-      const elem = String(r['ELEMENTO']||'').toLowerCase().trim();
-      const precio = parseFloat(String(r['PRECIO']||'0').replace(/[^0-9.]/g,'')) || 0;
-      if (elem) preciosSheet[elem] = precio;
+      // Try multiple column name variants
+      const elem = String(r['ELEMENTO'] || r['Elemento'] || r['elemento'] || '').toLowerCase().trim();
+      const precioRaw = r['PRECIO'] || r['Precio'] || r['precio'] || 
+                        r['PRECIO DE ALMACENAMIENTO MENSUAL'] || r['Precio de Almacenamiento Mensual'] || '0';
+      const precio = parseFloat(String(precioRaw).replace(/[^0-9.]/g,'')) || 0;
+      if (elem) {
+        preciosSheet[elem] = precio;
+        console.log('Precio cargado:', elem, '->', precio);
+      }
     });
-    console.log('Precios cargados:', Object.keys(preciosSheet).length);
+    console.log('Total precios cargados:', Object.keys(preciosSheet).length);
   } catch(e) {
-    console.warn('Precios no disponibles, usando tabla local');
+    console.warn('Precios no disponibles, usando tabla local:', e.message);
   }
 }
 
 let storageOrden = 'deuda'; // 'deuda' o 'elemento'
 
+function volverAStorage() {
+  // Go back without resetting the client filter
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-storage').classList.add('active');
+  setNav('nav-storage');
+}
+
 function resetStorage() {
+  currentStorageClient = '';
   document.getElementById('storage-client-input').value = '';
   document.getElementById('storage-client-suggestions').style.display = 'none';
   document.getElementById('storage-client-content').style.display = 'none';
@@ -1909,10 +1925,12 @@ function renderStorageClient(cliente) {
             <div class="storage-el-name">${item.elemento||'—'} ${cant>1?`(x${cant})`:''}</div>
             <div class="storage-el-meta">${item.codigo||'—'} · ${item.tienda||'—'}</div>
             ${metaExtra ? `<div class="storage-el-meta" style="color:var(--accent)">${metaExtra}</div>` : ''}
-            ${totalAcum > 0 ? `<div class="storage-el-meta" style="color:var(--red);font-weight:500">Acumulado: S/. ${totalAcum} (${mesesAcum} mes${mesesAcum>1?'es':''})</div>` : ''}
+
           </div>
-          <div>
-            <div class="storage-el-price">S/. ${subtotal}/mes</div>
+          <div style="text-align:right">
+            <div class="storage-el-price" style="color:var(--red);font-size:14px">S/. ${totalAcum > 0 ? totalAcum.toLocaleString() : '—'}</div>
+            <div class="storage-el-days" style="font-size:10px">acumulado</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:2px">S/. ${subtotal}/mes</div>
             <div class="storage-el-days">${dias} días</div>
           </div>
         </div>`;
