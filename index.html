@@ -758,6 +758,25 @@ if (sessionStorage.getItem('quasar-auth') === '1') {
         </div>
       </div>
 
+      <!-- Ordenar -->
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+        <span style="font-size:12px;color:var(--gray-500);font-weight:500">Ordenar:</span>
+        <button onclick="storageOrden='deuda'; renderStorageClient(currentStorageClient)" 
+          style="padding:6px 12px;border-radius:20px;border:1px solid var(--gray-200);background:#fff;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">
+          Mayor deuda
+        </button>
+        <button onclick="storageOrden='elemento'; renderStorageClient(currentStorageClient)"
+          style="padding:6px 12px;border-radius:20px;border:1px solid var(--gray-200);background:#fff;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">
+          A-Z elemento
+        </button>
+      </div>
+
+      <!-- Total sin cobrar -->
+      <div id="storage-total-bar" style="background:var(--red-light);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:12px;display:none">
+        <div style="font-size:11px;color:var(--red);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Total acumulado sin cobrar</div>
+        <div id="storage-total-amount" style="font-size:20px;font-weight:700;color:var(--red);font-family:'DM Mono',monospace">S/. 0</div>
+      </div>
+
       <!-- Botón nueva cotización -->
       <button class="btn-primary" onclick="mostrarFormCotizacion()" style="margin-bottom:16px" id="btn-nueva-cot">
         + Nueva cotización
@@ -1476,6 +1495,9 @@ async function cargarDesdeSheets() {
       console.warn('Historial no disponible:', e);
     }
 
+    // Cargar precios
+    await cargarPrecios();
+
     // Cargar desechos via Apps Script
     try {
       const rowsDesechos = await fetchJSON('desechos');
@@ -1671,6 +1693,13 @@ let selectedForCot = new Set();
 
 function getPrecio(elemento) {
   const key = String(elemento||'').toLowerCase().trim();
+  // Try sheet prices first (exact match)
+  if (preciosSheet[key] !== undefined) return preciosSheet[key];
+  // Try partial match in sheet
+  for (const [k, v] of Object.entries(preciosSheet)) {
+    if (key.includes(k) || k.includes(key)) return v;
+  }
+  // Fallback to hardcoded
   for (const [k, v] of Object.entries(PRECIOS)) {
     if (key.includes(k)) return v;
   }
@@ -1718,6 +1747,8 @@ function getHistorialCot(itemId) {
     .sort((a,b) => new Date(b['FECHA_INICIO']) - new Date(a['FECHA_INICIO']));
 }
 
+let preciosSheet = {};
+
 async function cargarCotizaciones() {
   try {
     cotizaciones = await fetchJSON('cotizaciones');
@@ -1726,6 +1757,22 @@ async function cargarCotizaciones() {
   }
 }
 
+async function cargarPrecios() {
+  try {
+    const rows = await fetchJSON('precios');
+    rows.forEach(r => {
+      const elem = String(r['ELEMENTO']||'').toLowerCase().trim();
+      const precio = parseFloat(String(r['PRECIO']||'0').replace(/[^0-9.]/g,'')) || 0;
+      if (elem) preciosSheet[elem] = precio;
+    });
+    console.log('Precios cargados:', Object.keys(preciosSheet).length);
+  } catch(e) {
+    console.warn('Precios no disponibles, usando tabla local');
+  }
+}
+
+let storageOrden = 'deuda'; // 'deuda' o 'elemento'
+
 function resetStorage() {
   document.getElementById('storage-client-input').value = '';
   document.getElementById('storage-client-suggestions').style.display = 'none';
@@ -1733,6 +1780,7 @@ function resetStorage() {
   selectedForCot.clear();
   cerrarFormCotizacion();
   cargarCotizaciones();
+  cargarPrecios();
 }
 
 function buscarClienteStorage() {
@@ -1762,6 +1810,18 @@ function seleccionarClienteStorage(cliente) {
   renderStorageClient(cliente);
 }
 
+function getMesesAcumulados(dias) {
+  return Math.max(0, Math.floor((dias - 30) / 30));
+}
+
+function getTotalAcumulado(item) {
+  const dias = getDiasEnAlmacen(item.fechaIngreso);
+  const meses = getMesesAcumulados(dias);
+  const precio = getPrecio(item.elemento);
+  const cant = parseInt(item.cant)||1;
+  return meses * precio * cant;
+}
+
 function renderStorageClient(cliente) {
   const clienteItems = items.filter(i => 
     i.estado === 'almacen' && String(i.cliente||'') === cliente
@@ -1772,12 +1832,30 @@ function renderStorageClient(cliente) {
     const estado = getEstadoCotizacion(item);
     grupos[estado].push(item);
   });
+  
+  // Sort each group
+  Object.keys(grupos).forEach(key => {
+    grupos[key].sort((a, b) => {
+      if (storageOrden === 'deuda') return getTotalAcumulado(b) - getTotalAcumulado(a);
+      return String(a.elemento||'').localeCompare(String(b.elemento||''));
+    });
+  });
 
   // Update stats
   document.getElementById('st-sin-cot').textContent = grupos.sin_cot.length;
   document.getElementById('st-vigente').textContent = grupos.vigente.length;
   document.getElementById('st-por-vencer').textContent = grupos.por_vencer.length;
   document.getElementById('st-gracia').textContent = grupos.gracia.length;
+  
+  // Total acumulado sin cobrar
+  const totalSinCobrar = [...grupos.sin_cot, ...grupos.por_vencer].reduce((sum, item) => sum + getTotalAcumulado(item), 0);
+  const totalBar = document.getElementById('storage-total-bar');
+  if (totalSinCobrar > 0) {
+    totalBar.style.display = 'block';
+    document.getElementById('storage-total-amount').textContent = `S/. ${totalSinCobrar.toLocaleString()}`;
+  } else {
+    totalBar.style.display = 'none';
+  }
 
   const sections = document.getElementById('storage-sections');
   sections.innerHTML = '';
@@ -1819,16 +1897,22 @@ function renderStorageClient(cliente) {
           metaExtra = `${cotActiva['N_COT']} · Vence en ${diasVence} día${diasVence>1?'s':''}`;
         }
 
+        const totalAcum = getTotalAcumulado(item);
+        const mesesAcum = getMesesAcumulados(dias);
         return `<div class="storage-element-card" onclick="abrirElementoStorage('${item.id}')">
           ${showCheck ? `<div class="checkbox-custom ${checked?'checked':''}" 
             onclick="event.stopPropagation(); toggleCotCheck('${item.id}')">${checked?'✓':''}</div>` : ''}
+          ${item.foto ? `<div style="width:44px;height:44px;border-radius:8px;overflow:hidden;flex-shrink:0">
+            <img src="${item.foto}" style="width:100%;height:100%;object-fit:contain;background:var(--gray-100)">
+          </div>` : `<div style="width:44px;height:44px;border-radius:8px;background:var(--gray-100);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px">${getEmoji(item.elemento)}</div>`}
           <div class="storage-el-info">
             <div class="storage-el-name">${item.elemento||'—'} ${cant>1?`(x${cant})`:''}</div>
             <div class="storage-el-meta">${item.codigo||'—'} · ${item.tienda||'—'}</div>
             ${metaExtra ? `<div class="storage-el-meta" style="color:var(--accent)">${metaExtra}</div>` : ''}
+            ${totalAcum > 0 ? `<div class="storage-el-meta" style="color:var(--red);font-weight:500">Acumulado: S/. ${totalAcum} (${mesesAcum} mes${mesesAcum>1?'es':''})</div>` : ''}
           </div>
           <div>
-            <div class="storage-el-price">S/. ${subtotal}</div>
+            <div class="storage-el-price">S/. ${subtotal}/mes</div>
             <div class="storage-el-days">${dias} días</div>
           </div>
         </div>`;
@@ -1981,6 +2065,8 @@ function abrirElementoStorage(itemId) {
       <div class="field-row"><span class="field-label">Fecha ingreso</span><span class="field-value">${formatDate(item.fechaIngreso)}</span></div>
       <div class="field-row"><span class="field-label">Días en almacén</span><span class="field-value" style="font-weight:600;color:${dias>30?'var(--red)':'var(--green)'}">${dias} días</span></div>
       <div class="field-row"><span class="field-label">Precio mensual</span><span class="field-value">S/. ${precio} x ${cant} = <strong>S/. ${precio*cant}</strong></span></div>
+      <div class="field-row"><span class="field-label">Meses acumulados</span><span class="field-value">${getMesesAcumulados(dias)} mes${getMesesAcumulados(dias)!==1?'es':''}</span></div>
+      <div class="field-row"><span class="field-label">Total acumulado</span><span class="field-value" style="color:var(--red);font-weight:700;font-size:15px">S/. ${getTotalAcumulado(item).toLocaleString()}</span></div>
       <div class="field-row"><span class="field-label">Estado</span><span class="field-value">${estadoBadge}</span></div>
     </div>
 
