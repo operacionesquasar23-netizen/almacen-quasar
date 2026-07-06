@@ -369,6 +369,62 @@ body {
 
 input[type="file"] { display: none; }
 
+/* ══ DASHBOARD ════════════════════════════════ */
+.dash-body { padding: 12px; flex: 1; overflow-y: auto; padding-bottom: 100px; }
+@media (min-width: 768px) { .dash-body { padding: 20px 32px 100px; } }
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.kpi-card {
+  background: #fff;
+  border-radius: var(--radius-sm);
+  padding: 14px 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--gray-100);
+  text-align: center;
+}
+.kpi-num {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: 'DM Mono', monospace;
+  line-height: 1.1;
+}
+.kpi-label {
+  font-size: 10px;
+  color: var(--gray-500);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  line-height: 1.3;
+}
+
+.chart-card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--gray-100);
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.chart-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 12px;
+}
+.chart-wrap {
+  position: relative;
+  width: 100%;
+}
+.chart-wrap canvas {
+  max-width: 100%;
+}
+
+
 /* ══ ALMACENAMIENTO ════════════════════════════ */
 .storage-topbar {
   background: var(--navy); padding: 48px 20px 20px;
@@ -532,6 +588,7 @@ input[type="file"] { display: none; }
 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -719,6 +776,64 @@ if (sessionStorage.getItem('quasar-auth') === '1') {
 
 
 
+
+<!-- SCREEN: DASHBOARD -->
+<div class="screen" id="screen-dashboard">
+  <div class="storage-topbar">
+    <div class="detail-title" style="padding-left:4px">Dashboard</div>
+    <button onclick="renderDashboard()" style="margin-left:auto;background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif">↺ Actualizar</button>
+  </div>
+  <div class="dash-body" id="dash-body">
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-num" id="kpi-total" style="color:var(--navy)">—</div>
+        <div class="kpi-label">Total en almacén</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-num" id="kpi-deuda" style="color:var(--red)">—</div>
+        <div class="kpi-label">Deuda acumulada</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-num" id="kpi-sincot" style="color:var(--amber)">—</div>
+        <div class="kpi-label">Sin cotización</div>
+      </div>
+    </div>
+
+    <!-- Top 10 clientes -->
+    <div class="chart-card">
+      <div class="chart-title">Top 10 Clientes por elementos</div>
+      <div class="chart-wrap" style="height:260px">
+        <canvas id="chart-clientes"></canvas>
+      </div>
+    </div>
+
+    <!-- Elementos por tipo -->
+    <div class="chart-card">
+      <div class="chart-title">Elementos por tipo (Top 10)</div>
+      <div class="chart-wrap" style="height:260px">
+        <canvas id="chart-tipos"></canvas>
+      </div>
+    </div>
+
+    <!-- Deuda por cliente -->
+    <div class="chart-card">
+      <div class="chart-title">Deuda acumulada por cliente (Top 10)</div>
+      <div class="chart-wrap" style="height:260px">
+        <canvas id="chart-deuda"></canvas>
+      </div>
+    </div>
+
+    <!-- Estado cotizaciones donut -->
+    <div class="chart-card">
+      <div class="chart-title">Estado de cotizaciones</div>
+      <div class="chart-wrap" style="height:220px;display:flex;justify-content:center">
+        <canvas id="chart-estado" style="max-width:220px"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- SCREEN: ALMACENAMIENTO -->
 <div class="screen" id="screen-storage">
   <div class="storage-topbar">
@@ -905,6 +1020,10 @@ if (sessionStorage.getItem('quasar-auth') === '1') {
     <span class="nav-icon">🏷️</span>
     <span>Almacenaje</span>
   </button>
+  <button class="nav-btn" id="nav-dashboard" onclick="showScreen('screen-dashboard'); setNav('nav-dashboard')">
+    <span class="nav-icon">📈</span>
+    <span>Dashboard</span>
+  </button>
   <button class="nav-btn" id="nav-stats" onclick="showScreen('screen-reportes'); setNav('nav-stats')">
     <span class="nav-icon">📊</span>
     <span>Reportes</span>
@@ -1023,6 +1142,7 @@ function showScreen(id) {
   if (id === 'screen-nuevo') { resetNewForm(); setNav('nav-nuevo'); }
   if (id === 'screen-reportes') { setNav('nav-stats'); }
   if (id === 'screen-storage') { setNav('nav-storage'); resetStorage(); }
+  if (id === 'screen-dashboard') { setNav('nav-dashboard'); renderDashboard(); }
 }
 
 function setNav(activeId) {
@@ -2387,6 +2507,200 @@ async function descargarReporteAlmacen() {
     console.error(err);
     showToast('❌ Error: ' + err.message);
   }
+}
+
+
+// ============ DASHBOARD ============
+let chartInstances = {};
+
+function destroyChart(id) {
+  if (chartInstances[id]) {
+    chartInstances[id].destroy();
+    delete chartInstances[id];
+  }
+}
+
+function renderDashboard() {
+  const almacenItems = items.filter(i => i.estado === 'almacen');
+  if (!almacenItems.length) {
+    document.getElementById('dash-body').innerHTML = '<div style="text-align:center;padding:40px;color:var(--gray-400)">No hay elementos en almacén</div>';
+    return;
+  }
+
+  // KPIs
+  document.getElementById('kpi-total').textContent = almacenItems.length;
+
+  const totalDeuda = almacenItems.reduce((s, i) => s + (getTotalAcumulado(i)||0), 0);
+  document.getElementById('kpi-deuda').textContent = totalDeuda > 0
+    ? 'S/.' + totalDeuda.toLocaleString()
+    : 'S/. 0';
+
+  const sinCot = almacenItems.filter(i => {
+    const d = getDiasEnAlmacen(i.fechaIngreso);
+    if (d < 30) return false;
+    const cotActiva = getCotActiva(i.id);
+    return !cotActiva;
+  }).length;
+  document.getElementById('kpi-sincot').textContent = sinCot;
+
+  // Colors palette
+  const COLORS = [
+    '#0f2744','#1a3d6e','#2563a8','#3b82c4','#60a5d4',
+    '#93c5e8','#bfdbee','#1e6b3c','#2e9d5a','#4abe7c'
+  ];
+
+  // ── Chart 1: Top 10 clientes por cantidad ──
+  const clienteCount = {};
+  almacenItems.forEach(i => {
+    const c = String(i.cliente||'Sin cliente');
+    clienteCount[c] = (clienteCount[c]||0) + 1;
+  });
+  const top10clientes = Object.entries(clienteCount)
+    .sort((a,b) => b[1]-a[1]).slice(0,10);
+
+  destroyChart('chart-clientes');
+  const ctx1 = document.getElementById('chart-clientes').getContext('2d');
+  chartInstances['chart-clientes'] = new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: top10clientes.map(([k]) => k.length > 18 ? k.substring(0,18)+'…' : k),
+      datasets: [{
+        data: top10clientes.map(([,v]) => v),
+        backgroundColor: COLORS,
+        borderRadius: 4,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 } } },
+        y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+
+  // ── Chart 2: Elementos por tipo Top 10 ──
+  const tipoCount = {};
+  almacenItems.forEach(i => {
+    const t = String(i.elemento||'Sin tipo');
+    tipoCount[t] = (tipoCount[t]||0) + 1;
+  });
+  const top10tipos = Object.entries(tipoCount)
+    .sort((a,b) => b[1]-a[1]).slice(0,10);
+
+  destroyChart('chart-tipos');
+  const ctx2 = document.getElementById('chart-tipos').getContext('2d');
+  chartInstances['chart-tipos'] = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: top10tipos.map(([k]) => k.length > 18 ? k.substring(0,18)+'…' : k),
+      datasets: [{
+        data: top10tipos.map(([,v]) => v),
+        backgroundColor: COLORS,
+        borderRadius: 4,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 } } },
+        y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+
+  // ── Chart 3: Deuda por cliente Top 10 ──
+  const clienteDeuda = {};
+  almacenItems.forEach(i => {
+    const c = String(i.cliente||'Sin cliente');
+    clienteDeuda[c] = (clienteDeuda[c]||0) + (getTotalAcumulado(i)||0);
+  });
+  const top10deuda = Object.entries(clienteDeuda)
+    .filter(([,v]) => v > 0)
+    .sort((a,b) => b[1]-a[1]).slice(0,10);
+
+  destroyChart('chart-deuda');
+  const ctx3 = document.getElementById('chart-deuda').getContext('2d');
+  chartInstances['chart-deuda'] = new Chart(ctx3, {
+    type: 'bar',
+    data: {
+      labels: top10deuda.map(([k]) => k.length > 18 ? k.substring(0,18)+'…' : k),
+      datasets: [{
+        data: top10deuda.map(([,v]) => v),
+        backgroundColor: ['#dc2626','#e05252','#e47272','#e89292','#ecb2b2',
+                          '#f0d0d0','#9b1c1c','#b91c1c','#ef4444','#f87171'],
+        borderRadius: 4,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ' S/. ' + ctx.parsed.x.toLocaleString()
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#f1f5f9' },
+          ticks: {
+            font: { size: 11 },
+            callback: (v) => 'S/.' + v.toLocaleString()
+          }
+        },
+        y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+
+  // ── Chart 4: Estado cotizaciones donut ──
+  const estadoCounts = { 'Sin cotización': 0, 'Por vencer': 0, 'Vigente': 0, 'En gracia': 0 };
+  almacenItems.forEach(i => {
+    const est = getEstadoCotizacion(i);
+    if (est === 'sin_cot') estadoCounts['Sin cotización']++;
+    else if (est === 'por_vencer') estadoCounts['Por vencer']++;
+    else if (est === 'vigente') estadoCounts['Vigente']++;
+    else estadoCounts['En gracia']++;
+  });
+
+  destroyChart('chart-estado');
+  const ctx4 = document.getElementById('chart-estado').getContext('2d');
+  chartInstances['chart-estado'] = new Chart(ctx4, {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(estadoCounts),
+      datasets: [{
+        data: Object.values(estadoCounts),
+        backgroundColor: ['#dc2626','#d97706','#16a34a','#6b7280'],
+        borderWidth: 2,
+        borderColor: '#fff',
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '60%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { size: 11 }, padding: 12, boxWidth: 12 }
+        }
+      }
+    }
+  });
 }
 
 // ============ REPORTES ============
