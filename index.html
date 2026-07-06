@@ -777,10 +777,15 @@ if (sessionStorage.getItem('quasar-auth') === '1') {
         <div id="storage-total-amount" style="font-size:20px;font-weight:700;color:var(--red);font-family:'DM Mono',monospace">S/. 0</div>
       </div>
 
-      <!-- Botón nueva cotización -->
-      <button class="btn-primary" onclick="mostrarFormCotizacion()" style="margin-bottom:16px" id="btn-nueva-cot">
-        + Nueva cotización
-      </button>
+      <!-- Botones acción -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="btn-primary" onclick="mostrarFormCotizacion()" style="margin:0;flex:1">
+          + Nueva cotización
+        </button>
+        <button onclick="descargarReporteAlmacen()" style="padding:12px 16px;background:var(--green-light);color:var(--green);border:1px solid #bbf7d0;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap">
+          📄 Descargar Reporte
+        </button>
+      </div>
 
       <!-- Formulario cotización -->
       <div class="cot-form-card" id="cot-form">
@@ -2148,6 +2153,190 @@ function abrirElementoStorage(itemId) {
   `;
 
   showScreen('screen-storage-element');
+}
+
+
+// ============ REPORTE ALMACENAMIENTO ============
+async function descargarReporteAlmacen() {
+  if (!currentStorageClient) { showToast('⚠️ Selecciona un cliente primero'); return; }
+  
+  const clienteItems = items.filter(i => 
+    i.estado === 'almacen' && String(i.cliente||'') === currentStorageClient
+  );
+
+  if (!clienteItems.length) { showToast('No hay elementos para reportar'); return; }
+
+  showToast('⏳ Generando reporte...');
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 10;
+    const fecha = new Date().toLocaleDateString('es-PE');
+
+    // ── HEADER ──
+    doc.setFillColor(15, 39, 68);
+    doc.rect(0, 0, pageW, 28, 'F');
+
+    // Logo
+    const logoB64 = document.querySelector('img[alt="Quasar"]')?.src;
+    if (logoB64) {
+      try { doc.addImage(logoB64, 'PNG', margin, 2, 24, 24); } catch(e){}
+    }
+
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(15); doc.setFont('helvetica', 'bold');
+    doc.text(`Reporte de Almacenamiento`, margin + 28, 12);
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+    doc.setTextColor(180,200,220);
+    doc.text(`Cliente: ${currentStorageClient}`, margin + 28, 20);
+    doc.setTextColor(255,255,255);
+    doc.text(`Generado: ${fecha}`, pageW - margin, 12, { align: 'right' });
+    doc.text(`${clienteItems.length} elementos`, pageW - margin, 20, { align: 'right' });
+
+    // ── SUMMARY BAR ──
+    const totalDeuda = clienteItems.reduce((s, i) => s + getTotalAcumulado(i), 0);
+    const sinCot = clienteItems.filter(i => getEstadoCotizacion(i) === 'sin_cot').length;
+    const vigente = clienteItems.filter(i => getEstadoCotizacion(i) === 'vigente').length;
+    const porVencer = clienteItems.filter(i => getEstadoCotizacion(i) === 'por_vencer').length;
+
+    doc.setFillColor(239,246,255);
+    doc.rect(margin, 30, pageW - margin*2, 10, 'F');
+    doc.setTextColor(15,39,68); doc.setFontSize(9); doc.setFont('helvetica', 'bold');
+    doc.text(`Total acumulado: S/. ${totalDeuda.toLocaleString()}`, margin+2, 36.5);
+    doc.text(`Sin cotización: ${sinCot}`, margin+70, 36.5);
+    doc.text(`Vigente: ${vigente}`, margin+110, 36.5);
+    doc.text(`Por vencer: ${porVencer}`, margin+140, 36.5);
+
+    // ── TABLE HEADERS ──
+    const cols = [
+      { label: 'ELEMENTO', w: 36 },
+      { label: 'CÓD', w: 16 },
+      { label: 'MARCA/CAMPAÑA', w: 36 },
+      { label: 'TIENDA', w: 36 },
+      { label: 'CANT', w: 12 },
+      { label: 'N° COT', w: 22 },
+      { label: 'FECHA FIN', w: 22 },
+      { label: 'DÍAS VEN.', w: 18 },
+      { label: 'ESTADO', w: 20 },
+      { label: 'COSTO ACUM.', w: 28 },
+    ];
+    // Total: 36+16+36+36+12+22+22+18+20+28 = 246 + 20 margin = 266 ✅
+
+    let y = 43;
+    const rowH = 8;
+
+    function drawHeaders(yPos) {
+      doc.setFillColor(15,39,68);
+      doc.rect(margin, yPos, pageW - margin*2, 8, 'F');
+      doc.setTextColor(255,255,255);
+      doc.setFontSize(7.5); doc.setFont('helvetica', 'bold');
+      let x = margin;
+      cols.forEach(col => {
+        doc.text(col.label, x + 1.5, yPos + 5.5);
+        x += col.w;
+      });
+      return yPos + 8;
+    }
+
+    y = drawHeaders(y);
+
+    // Sort by total acumulado desc
+    const sorted = [...clienteItems].sort((a,b) => getTotalAcumulado(b) - getTotalAcumulado(a));
+
+    sorted.forEach((item, idx) => {
+      if (y + rowH > pageH - 12) {
+        doc.addPage();
+        y = 14;
+        y = drawHeaders(y);
+      }
+
+      const estado = getEstadoCotizacion(item);
+      const cotActiva = getCotActiva(item.id);
+      const ultimaCot = getUltimaCotizacion(item.id);
+      const totalAcum = getTotalAcumulado(item);
+      const diasCobro = getDiasCobro(item);
+
+      // Estado color
+      const estadoColors = {
+        sin_cot:    [220,38,38],
+        por_vencer: [217,119,6],
+        vigente:    [22,163,74],
+        gracia:     [107,114,128]
+      };
+      const estadoLabels = {
+        sin_cot: 'Sin cotización',
+        por_vencer: 'Por vencer',
+        vigente: 'Vigente',
+        gracia: 'En gracia'
+      };
+
+      // Row bg
+      const bg = idx % 2 === 0 ? [255,255,255] : [249,250,251];
+      doc.setFillColor(...bg);
+      doc.rect(margin, y, pageW - margin*2, rowH, 'F');
+      doc.setDrawColor(229,231,235);
+      doc.line(margin, y + rowH, pageW - margin, y + rowH);
+
+      // Row data
+      doc.setTextColor(55,65,81);
+      doc.setFontSize(8); doc.setFont('helvetica', 'normal');
+
+      const nCot = cotActiva ? cotActiva['N_COT'] : (ultimaCot ? `${ultimaCot['N_COT']} ✓` : '—');
+      const fechaFin = cotActiva ? formatDate(cotActiva['FECHA_FIN']) : (ultimaCot ? formatDate(ultimaCot['FECHA_FIN']) : '—');
+      const diasVen = estado === 'sin_cot' || estado === 'por_vencer' ? (diasCobro > 0 ? `${diasCobro}d` : '—') : '—';
+
+      const vals = [
+        String(item.elemento||'—').substring(0,22),
+        String(item.codigo||'—'),
+        String(item.campana||'—').substring(0,22),
+        String(item.tienda||'—').substring(0,22),
+        String(item.cant||'1'),
+        nCot.substring(0,14),
+        fechaFin,
+        diasVen,
+        estadoLabels[estado] || '—',
+        totalAcum > 0 ? `S/. ${totalAcum.toLocaleString()}` : '—',
+      ];
+
+      let x = margin;
+      vals.forEach((val, i) => {
+        if (i === 8) {
+          // Estado with color
+          doc.setTextColor(...(estadoColors[estado] || [107,114,128]));
+          doc.setFont('helvetica', 'bold');
+        } else if (i === 9 && totalAcum > 0) {
+          doc.setTextColor(220,38,38);
+          doc.setFont('helvetica', 'bold');
+        } else {
+          doc.setTextColor(55,65,81);
+          doc.setFont('helvetica', 'normal');
+        }
+        doc.text(val, x + 1.5, y + 5.5);
+        x += cols[i].w;
+      });
+
+      y += rowH;
+    });
+
+    // Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(7); doc.setTextColor(156,163,175); doc.setFont('helvetica','normal');
+      doc.text(`Página ${i} de ${pageCount} · Almacén Quasar`, pageW/2, pageH - 4, { align: 'center' });
+    }
+
+    const filename = `almacenamiento_${currentStorageClient.replace(/[^a-zA-Z0-9]/g,'_')}_${fecha.replace(/\//g,'-')}.pdf`;
+    doc.save(filename);
+    showToast('✅ Reporte descargado');
+
+  } catch(err) {
+    console.error(err);
+    showToast('❌ Error: ' + err.message);
+  }
 }
 
 // ============ REPORTES ============
